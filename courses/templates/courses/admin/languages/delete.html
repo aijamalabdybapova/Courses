@@ -1,0 +1,34 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Удаление языка | LangLearn Admin{% endblock %}
+{% block page_title %}Удаление языка{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="text-center">
+        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: var(--danger); margin-bottom: 20px;"></i>
+        <h3>Вы уверены, что хотите удалить язык "{{ language.name }}"?</h3>
+        <p class="text-muted">Это действие нельзя отменить.</p>
+        
+        {% if language.courses.exists %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            Внимание! У этого языка есть связанные курсы ({{ language.courses.count }}). 
+            Сначала удалите или перенесите их.
+        </div>
+        <a href="{% url 'admin_languages' %}" class="btn btn-secondary">Вернуться</a>
+        {% else %}
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-admin-danger">
+                <i class="fas fa-trash me-2"></i>Да, удалить
+            </button>
+            <a href="{% url 'admin_languages' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Вход | LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Убираем все фоны */
+    body {
+        background: none !important;
+        overflow-x: hidden;
+    }
+    
+    /* Прячем стандартные элементы */
+    .navbar, footer {
+        display: none;
+    }
+    
+    /* Убираем декоративные круги */
+    .decorative-circle {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Фоновое изображение на весь экран -->
+<div class="auth-fullscreen-bg">
+    <img src="{% static 'courses/images/back.jpg' %}" alt="Фон" id="auth-bg-image">
+</div>
+<div class="auth-overlay"></div>
+
+<!-- Основной контент -->
+<div class="auth-page-wrapper">
+    <div class="auth-card-fullscreen">
+        <div class="auth-header-fullscreen">
+            <div class="auth-logo-fullscreen">
+                <i class="fas fa-language"></i>
+            </div>
+            <h1 class="auth-title-fullscreen">LangLearn</h1>
+            <p class="auth-subtitle-fullscreen">Войдите в свой аккаунт</p>
+        </div>
+        
+        <div class="auth-body-fullscreen">
+            {% if form.errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Неправильное имя пользователя или пароль.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+            
+            {% if next %}
+                {% if user.is_authenticated %}
+                <div class="alert alert-warning" role="alert">
+                    У вашего аккаунта нет доступа к этой странице.
+                </div>
+                {% else %}
+                <div class="alert alert-info" role="alert">
+                    Пожалуйста, войдите чтобы увидеть эту страницу.
+                </div>
+                {% endif %}
+            {% endif %}
+            
+            <form method="post" action="{% url 'login' %}">
+                {% csrf_token %}
+                
+                <div class="auth-form-group-fullscreen">
+                    <label class="auth-form-label-fullscreen">
+                        <i class="fas fa-user me-1"></i>Имя пользователя или Email
+                    </label>
+                    <input type="text" 
+                           name="username" 
+                           class="auth-form-control-fullscreen {% if form.errors %}is-invalid{% endif %}"
+                           placeholder="Введите ваше имя пользователя"
+                           required
+                           autofocus>
+                </div>
+                
+                <div class="auth-form-group-fullscreen">
+                    <label class="auth-form-label-fullscreen">
+                        <i class="fas fa-lock me-1"></i>Пароль
+                    </label>
+                    <input type="password" 
+                           name="password" 
+                           class="auth-form-control-fullscreen {% if form.errors %}is-invalid{% endif %}"
+                           placeholder="Введите ваш пароль"
+                           required>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="remember-me" name="remember">
+                        <label class="form-check-label" for="remember-me" style="color: var(--text-color);">
+                            Запомнить меня
+                        </label>
+                    </div>
+                    <a href="{% url 'password_reset' %}" class="text-decoration-none small" style="color: #4361ee;">
+                        Забыли пароль?
+                    </a>
+                </div>
+                
+                <button type="submit" class="auth-submit-btn-fullscreen">
+                    <i class="fas fa-sign-in-alt me-2"></i>Войти в аккаунт
+                </button>
+                
+                
+                
+                
+                
+                <input type="hidden" name="next" value="{{ next }}">
+            </form>
+        </div>
+        
+        <div class="auth-footer-fullscreen">
+            Еще нет аккаунта? 
+            <a href="{% url 'register' %}">Зарегистрироваться</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Предзагрузка фонового изображения
+window.addEventListener('load', function() {
+    const bgImage = document.getElementById('auth-bg-image');
+    if (bgImage) {
+        bgImage.style.opacity = '1';
+    }
+});
+
+// Добавляем эффект параллакса при движении мыши
+document.addEventListener('mousemove', function(e) {
+    const overlay = document.querySelector('.auth-overlay');
+    if (overlay) {
+        const x = (e.clientX / window.innerWidth - 0.5) * 20;
+        const y = (e.clientY / window.innerHeight - 0.5) * 20;
+        overlay.style.transform = `translate(${x}px, ${y}px)`;
+    }
+});
+</script>
+{% endblock %}

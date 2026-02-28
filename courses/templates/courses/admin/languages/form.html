@@ -1,0 +1,55 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | LangLearn Admin{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% if form.name.errors %}
+                <div class="text-danger">{{ form.name.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.icon.id_for_label }}" class="form-label">{{ form.icon.label }}</label>
+                {{ form.icon }}
+                {% if form.icon.errors %}
+                <div class="text-danger">{{ form.icon.errors }}</div>
+                {% endif %}
+                <div class="form-text">Например: fas fa-globe, fas fa-flag-usa, fas fa-sun</div>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.errors %}
+            <div class="text-danger">{{ form.description.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-admin-primary">
+                <i class="fas fa-save me-2"></i>{{ action }}
+            </button>
+            <a href="{% url 'admin_languages' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Управление языками | LangLearn Admin{% endblock %}
+{% block page_title %}Управление языками{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">Список языков</h5>
+        <a href="{% url 'admin_language_create' %}" class="btn btn-admin-primary">
+            <i class="fas fa-plus me-2"></i>Добавить язык
+        </a>
+    </div>
+    
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Иконка</th>
+                <th>Название</th>
+                <th>Описание</th>
+                <th>Курсов</th>
+                <th>Уроков</th>
+                <th>Слов</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for language in languages %}
+            <tr>
+                <td>{{ language.id }}</td>
+                <td><i class="{{ language.icon }}" style="font-size: 1.2rem; color: #4361ee;"></i></td>
+                <td><strong>{{ language.name }}</strong></td>
+                <td>{{ language.description|truncatechars:50 }}</td>
+                <td>{{ language.courses.count }}</td>
+                <td>{{ language.total_lessons }}</td>
+                <td>{{ language.total_words }}</td>
+                <td>
+                    <a href="{% url 'admin_language_edit' language.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'admin_language_delete' language.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center text-muted">Языки не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

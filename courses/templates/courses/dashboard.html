@@ -1,0 +1,531 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Панель управления - LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Стили для дашборда */
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-stat-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+}
+
+.dashboard-stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow);
+}
+
+.dashboard-stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+}
+
+.dashboard-stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-stat-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Стили для прогресса языков */
+.language-progress-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.language-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.language-progress-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.language-progress-percentage {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.language-progress-bar {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.language-progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.language-progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Стили для кругов прогресса */
+.goal-progress-circle {
+    width: 150px;
+    height: 150px;
+    position: relative;
+    margin: 0 auto 1rem;
+}
+
+.goal-progress-circle svg {
+    width: 150px;
+    height: 150px;
+}
+
+.goal-progress-circle-bg {
+    fill: none;
+    stroke: var(--border-color);
+    stroke-width: 8;
+}
+
+.goal-progress-circle-fill {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 439.8;  /* 2 * π * 70 (радиус круга) = 2 * 3.14 * 70 */
+    stroke-dashoffset: 439.8; /* Начальное значение - полностью скрыт */
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
+}
+
+/* Для 100% прогресса */
+.goal-progress-circle-fill.completed {
+    stroke: #28a745; /* Зеленый цвет для достигнутой цели */
+    animation: pulse-success 2s infinite;
+}
+
+.goal-progress-circle-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+}
+
+.goal-progress-percentage {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.goal-progress-percentage.completed {
+    color: #28a745; /* Зеленый цвет для текста */
+}
+
+.goal-goal-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+}
+
+/* Стили для серии дней */
+.streak-card {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.streak-fire {
+    font-size: 3rem;
+    color: #ff6b6b;
+    margin-bottom: 0.5rem;
+    animation: pulse 2s infinite;
+}
+
+.streak-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #ff6b6b;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.streak-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+/* Стили для активности */
+.activity-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.activity-timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+
+.activity-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+    padding-left: 1.5rem;
+}
+
+.activity-item::before {
+    content: '';
+    position: absolute;
+    left: -0.5rem;
+    top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    border: 3px solid var(--card-bg);
+}
+
+.activity-icon {
+    position: absolute;
+    left: -2rem;
+    top: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.activity-time {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.activity-text {
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+.activity-details {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+@keyframes pulse-success {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+@keyframes fill-progress {
+    from {
+        stroke-dashoffset: 439.8;
+    }
+    to {
+        stroke-dashoffset: calc(439.8 - (439.8 * var(--progress-percentage, 0) / 100));
+    }
+}
+/* Адаптивность */
+@media (max-width: 768px) {
+    .dashboard-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .dashboard-stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .goal-progress-circle {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .goal-progress-circle svg {
+        width: 120px;
+        height: 120px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="row">
+        <!-- Левая колонка - основная статистика -->
+        <div class="col-lg-8">
+            <!-- Статистика пользователя -->
+            <div class="dashboard-stats">
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="dashboard-stat-number">{{ stats.total_lessons_completed }}</div>
+                    <div class="dashboard-stat-label">Уроков пройдено</div>
+                </div>
+                
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="dashboard-stat-number">{{ stats.total_tests }}</div>
+                    <div class="dashboard-stat-label">Тестов пройдено</div>
+                </div>
+                
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="dashboard-stat-number">{{ stats.avg_test_score }}%</div>
+                    <div class="dashboard-stat-label">Средний балл</div>
+                </div>
+                
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="dashboard-stat-number">{{ stats.xp }}</div>
+                    <div class="dashboard-stat-label">Опыта (Ур. {{ stats.level }})</div>
+                </div>
+            </div>
+
+            <!-- Прогресс по языкам -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">
+                        <i class="fas fa-globe-americas me-2"></i>Прогресс по языкам
+                    </h3>
+                    
+                    {% for lang in languages_progress %}
+                    <div class="language-progress-card">
+                        <div class="language-progress-header">
+                            <div class="language-progress-title">
+                                {{ lang.language.name }}
+                            </div>
+                            <div class="language-progress-percentage">
+                                {{ lang.percentage }}%
+                            </div>
+                        </div>
+                        
+                        <div class="language-progress-bar">
+                            <div class="language-progress-fill" style="width: {{ lang.percentage }}%"></div>
+                        </div>
+                        
+                        <div class="language-progress-info">
+                            <span>Пройдено уроков: {{ lang.completed }}/{{ lang.total }}</span>
+                            <span>{{ lang.percentage }}% завершено</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-language fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Начните изучать языки, чтобы увидеть прогресс</p>
+                        <a href="{% url 'language_list' %}" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>Начать обучение
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка - боковая панель -->
+        <div class="col-lg-4">
+            <!-- Ежедневная цель -->
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <h3 class="card-title mb-4">
+                        <i class="fas fa-bullseye me-2"></i>Ежедневная цель
+                    </h3>
+                    
+                    <div class="goal-progress-circle">
+                        <svg>
+                            <circle class="goal-progress-circle-bg" cx="75" cy="75" r="70"></circle>
+                            <circle class="goal-progress-circle-fill" 
+                                    cx="75" cy="75" r="70"
+                                    id="goal-progress-fill"></circle>
+                        </svg>
+                        <div class="goal-progress-circle-text">
+                            <div class="goal-progress-percentage" id="goal-percentage">{{ goal_percentage|floatformat:0 }}%</div>
+                            <div class="goal-goal-label">
+                                {{ today_study }} / {{ user.userprofile.daily_goal_minutes }} мин
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p class="text-muted mb-3">
+                        {% if goal_percentage >= 100 %}
+                         Цель достигнута!
+                        {% elif goal_percentage >= 70 %}
+                        Отличный прогресс!
+                        {% elif goal_percentage >= 30 %}
+                        Продолжайте в том же духе!
+                        {% else %}
+                        Начните учиться сегодня
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-cog me-1"></i>Настроить цель
+                    </a>
+                </div>
+            </div>
+
+            <!-- Серия дней -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="streak-card">
+                        <div class="streak-fire">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="streak-number">{{ stats.streak_days }}</div>
+                        <div class="streak-label">дней подряд</div>
+                        <small class="text-muted mt-2 d-block">Держите серию, изучая каждый день!</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Последняя активность -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">
+                        <i class="fas fa-history me-2"></i>Последняя активность
+                    </h3>
+                    
+                    <div class="activity-timeline">
+                        {% for activity in recent_activity %}
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                {% if activity.type == 'lesson' %}
+                                <i class="fas fa-book"></i>
+                                {% else %}
+                                <i class="fas fa-graduation-cap"></i>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="activity-time">
+                                {{ activity.date|date:"d.m.Y H:i" }}
+                            </div>
+                            
+                            <div class="activity-text">
+                                {% if activity.type == 'lesson' %}
+                                📚 {{ activity.title }}
+                                {% else %}
+                                📝 {{ activity.title }}
+                                {% endif %}
+                            </div>
+                            
+                            {% if activity.type == 'test' %}
+                            <div class="activity-details">
+                                Результат: {{ activity.score }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% empty %}
+                        <div class="text-center py-3">
+                            <p class="text-muted">Активность отсутствует</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const goalPercentage = parseFloat('{{ goal_percentage }}');
+    const goalCircle = document.getElementById('goal-progress-fill');
+    const percentageText = document.getElementById('goal-percentage');
+    
+    if (goalCircle && !isNaN(goalPercentage)) {
+        // Рассчитываем правильный offset
+        const circumference = 439.8; // 2 * π * r, где r=70
+        const offset = circumference - (goalPercentage / 100 * circumference);
+        
+        // Применяем вычисления
+        goalCircle.style.strokeDashoffset = offset;
+        
+        // Если цель достигнута (100% или больше)
+        if (goalPercentage >= 100) {
+            goalCircle.classList.add('completed');
+            percentageText.classList.add('completed');
+            goalCircle.style.stroke = '#28a745'; // Зеленый цвет
+            
+            // Гарантируем полный круг (0 offset)
+            goalCircle.style.strokeDashoffset = 0;
+        }
+        
+        console.log('Goal percentage:', goalPercentage);
+        console.log('Circumference:', circumference);
+        console.log('Calculated offset:', offset);
+        console.log('Applied offset:', goalCircle.style.strokeDashoffset);
+    }
+});
+</script>
+{% endblock %}

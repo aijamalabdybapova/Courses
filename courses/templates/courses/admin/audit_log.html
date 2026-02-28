@@ -1,0 +1,77 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Журнал аудита | LangLearn Admin{% endblock %}
+{% block page_title %}Журнал аудита{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">Последние действия пользователей</h5>
+    </div>
+    
+    <div class="timeline">
+        {% for activity in activities %}
+        <div class="d-flex mb-3 pb-3 border-bottom">
+            <div class="me-3" style="font-size: 2rem;">
+                {{ activity.icon }}
+            </div>
+            <div class="flex-grow-1">
+                <div>
+                    <strong>{{ activity.user }}</strong> {{ activity.action }}
+                    {% if activity.target %}
+                    <span class="text-primary">{{ activity.target }}</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">
+                    <i class="far fa-clock me-1"></i>{{ activity.time|date:"d.m.Y H:i:s" }}
+                </small>
+            </div>
+            <div>
+                <span class="badge {% if activity.type == 'lesson' %}bg-success{% elif activity.type == 'test' %}bg-info{% else %}bg-secondary{% endif %}">
+                    {{ activity.type }}
+                </span>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center text-muted py-4">
+            <i class="fas fa-history fa-3x mb-3"></i>
+            <p>Нет записей в журнале аудита</p>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Пагинация -->
+    {% if activities.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if activities.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ activities.previous_page_number }}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in activities.paginator.page_range %}
+                {% if activities.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% elif i > activities.number|add:'-3' and i < activities.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if activities.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ activities.next_page_number }}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

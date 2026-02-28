@@ -1,0 +1,482 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Главная | LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Стили для главной страницы авторизованного пользователя */
+.hero-welcome {
+    position: relative;
+    color: #02356a;
+    border-radius: var(--border-radius);
+    padding: 3rem 2rem;
+    margin-bottom: 3rem;
+    overflow: hidden;
+    text-align: center;
+
+    background-image:
+        linear-gradient(
+            rgba(0, 0, 0, 0.05),
+            rgba(0, 0, 0, 0.05)
+        ),
+        url("{% static 'courses/images/back05.jpg' %}");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.hero-welcome::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.15;
+    animation: float 20s linear infinite;
+    pointer-events: none;
+}
+
+.hero-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0 auto 1.5rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.welcome-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
+    justify-content: center;   /* центрируем группу */
+    gap: 0.6rem;               /* расстояние между карточками */
+    margin: 2rem 0;
+}
+
+.welcome-stat {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    
+}
+
+.welcome-stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.welcome-stat-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.quick-action-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.quick-action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow);
+    border-color: var(--primary-color);
+}
+
+.quick-action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+}
+
+.recent-activity {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 2rem 0;
+    border: 1px solid var(--border-color);
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.activity-content {
+    flex-grow: 1;
+}
+
+.activity-title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.activity-time {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.language-progress-section {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 2rem 0;
+    border: 1px solid var(--border-color);
+}
+
+.language-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.language-item:last-child {
+    border-bottom: none;
+}
+
+.language-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.language-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.language-progress-bar {
+    width: 150px;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.language-progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.language-percentage {
+    font-weight: 600;
+    color: var(--primary-color);
+    min-width: 50px;
+    text-align: right;
+}
+
+.continue-learning {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--gradient-secondary);
+    color: white;
+    border-radius: var(--border-radius);
+    margin: 2rem 0;
+}
+
+.continue-learning h3 {
+    margin-bottom: 1.5rem;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0) translateX(0);
+    }
+    100% {
+        transform: translateY(-20px) translateX(-20px);
+    }
+}
+
+@media (max-width: 768px) {
+    .welcome-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .language-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .language-progress-bar {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Герой-секция с приветствием -->
+<div class="hero-welcome fade-in">
+    <div class="hero-avatar">
+        {{ user.username|first|upper }}
+    </div>
+    
+    <h1 class="display-6 fw-bold mb-3">Добро пожаловать, {{ user.username }}!</h1>
+    <p class="lead mb-4">Продолжайте свое путешествие в мир языков</p>
+    
+    <div class="welcome-stats">
+        <div class="welcome-stat">
+            <div class="welcome-stat-number">{{ stats.xp }}</div>
+            <div class="welcome-stat-label">Опыта (Ур. {{ stats.level }})</div>
+        </div>
+        <div class="welcome-stat">
+            <div class="welcome-stat-number">{{ stats.total_lessons_completed }}</div>
+            <div class="welcome-stat-label">Уроков пройдено</div>
+        </div>
+        <div class="welcome-stat">
+            <div class="welcome-stat-number">{{ stats.streak_days }}</div>
+            <div class="welcome-stat-label">Дней подряд</div>
+        </div>
+        <div class="welcome-stat">
+            <div class="welcome-stat-number">{{ stats.total_tests }}</div>
+            <div class="welcome-stat-label">Тестов пройдено</div>
+        </div>
+    </div>
+    
+   
+</div>
+
+<!-- Быстрые действия -->
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i class="fas fa-bolt me-2"></i>Быстрые действия
+        </h2>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <div class="quick-action-card" onclick="window.location.href='{% url 'language_list' %}'">
+        <div class="quick-action-icon">
+            <i class="fas fa-globe-americas"></i>
+        </div>
+        <h4>Изучать языки</h4>
+        <p class="text-muted">Выберите язык и начните обучение</p>
+    </div>
+    
+    <div class="quick-action-card" onclick="window.location.href='{% url 'dictionary' %}'">
+        <div class="quick-action-icon">
+            <i class="fas fa-book"></i>
+        </div>
+        <h4>Мой словарь</h4>
+        <p class="text-muted">Повторите изученные слова</p>
+    </div>
+    
+    <div class="quick-action-card" onclick="window.location.href='{% url 'profile' %}'">
+        <div class="quick-action-icon">
+            <i class="fas fa-user"></i>
+        </div>
+        <h4>Мой профиль</h4>
+        <p class="text-muted">Настройте учетную запись</p>
+    </div>
+    
+    <div class="quick-action-card" onclick="window.location.href='{% url 'dashboard' %}'">
+        <div class="quick-action-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h4>Статистика</h4>
+        <p class="text-muted">Смотрите свой прогресс</p>
+    </div>
+</div>
+
+<!-- Продолжить обучение -->
+<div class="continue-learning fade-in">
+    <h3> Не останавливайтесь на достигнутом!</h3>
+    <p class="lead mb-4">Каждый день обучения приближает вас к свободному владению языком.</p>
+    <a href="{% url 'language_list' %}" class="btn btn-outline-light btn-lg">
+        <i class="fas fa-play-circle me-2"></i>Продолжить обучение
+    </a>
+</div>
+
+<!-- Последняя активность -->
+<div class="recent-activity">
+    <h3 class="mb-4">
+        <i class="fas fa-history me-2"></i>Последняя активность
+    </h3>
+    
+    {% if recent_activities %}
+        {% for activity in recent_activities %}
+        <div class="activity-item">
+            <div class="activity-icon">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-title">
+                    {{ activity.lesson.title }}
+                </div>
+                <div class="activity-details">
+                    <span class="activity-language">{{ activity.lesson.course.language.name }}</span> • 
+                    <span class="activity-time">{{ activity.completed_at|date:"d.m.Y H:i" }}</span>
+                </div>
+            </div>
+            <div>
+                <span class="badge bg-success">Пройдено</span>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+            <p class="text-muted">У вас пока нет активности</p>
+            <a href="{% url 'language_list' %}" class="btn btn-primary">
+                <i class="fas fa-play me-2"></i>Начать первый урок
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Прогресс по языкам -->
+<div class="language-progress-section">
+    <h3 class="mb-4">
+        <i class="fas fa-chart-line me-2"></i>Ваш прогресс по языкам
+    </h3>
+    
+    {% if languages_with_progress %}
+        {% for item in languages_with_progress %}
+        <div class="language-item">
+            <div class="language-info">
+                <div class="language-icon">
+                    <i class="{{ item.language.icon|default:'fas fa-language' }}"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1">{{ item.language.name }}</h5>
+                    <small class="text-muted">{{ item.completed_lessons }}/{{ item.total_lessons }} уроков</small>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center gap-3">
+                <div class="language-progress-bar">
+                    <div class="language-progress-fill" style="width: {{ item.progress_percentage }}%"></div>
+                </div>
+                <div class="language-percentage">{{ item.progress_percentage }}%</div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if total_languages > 3 %}
+        <div class="text-center mt-4">
+            <a href="{% url 'language_list' %}" class="btn btn-outline-primary">
+                <i class="fas fa-plus me-2"></i>Показать все {{ total_languages }} языков
+            </a>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-language fa-3x text-muted mb-3"></i>
+            <p class="text-muted">Вы еще не начали изучать языки</p>
+            <a href="{% url 'language_list' %}" class="btn btn-primary">
+                <i class="fas fa-play me-2"></i>Начать изучение
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Информация о платформе -->
+<div class="card">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 text-center mb-4 mb-md-0">
+                <div class="icon-container">
+                    <i class="fas fa-language"></i>
+                </div>
+                <h5>{{ total_languages }} языков</h5>
+                <p class="text-muted">Доступно для изучения</p>
+            </div>
+            <div class="col-md-4 text-center mb-4 mb-md-0">
+                <div class="icon-container">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h5>{{ total_courses }} курсов</h5>
+                <p class="text-muted">От начинающего до продвинутого</p>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="icon-container">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h5>Сообщество</h5>
+                <p class="text-muted">Тысячи изучающих языки</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.icon-container {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.8rem;
+    margin: 0 auto 1rem;
+}
+</style>
+
+
+{% endblock %}

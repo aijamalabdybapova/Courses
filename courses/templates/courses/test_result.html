@@ -1,0 +1,156 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Результат теста | LangLearn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card text-center">
+                <div class="card-header" 
+                     style="background: {% if result.passed %}#28a745{% else %}#dc3545{% endif %}; color: white;">
+                    <h3 class="mb-0">
+                        <i class="fas fa-{% if result.passed %}trophy{% else %}times-circle{% endif %} me-2"></i>
+                        Результат теста
+                    </h3>
+                </div>
+                
+                <div class="card-body py-5">
+                    {% if result.passed %}
+                    <div class="result-success mb-4">
+                        <i class="fas fa-check-circle fa-5x text-success mb-3"></i>
+                        <h2 class="text-success">Поздравляем! Тест пройден!</h2>
+                    </div>
+                    {% else %}
+                    <div class="result-fail mb-4">
+                        <i class="fas fa-times-circle fa-5x text-danger mb-3"></i>
+                        <h2 class="text-danger">Тест не пройден</h2>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row justify-content-center mb-4">
+                        <div class="col-md-6">
+                            <div class="result-card">
+                                <div class="result-stat">
+                                    <div class="result-value" 
+                                         style="color: {% if result.percentage >= 70 %}#28a745{% else %}#dc3545{% endif %};">
+                                        {{ result.percentage|floatformat:"0" }}%
+                                    </div>
+                                    <div class="result-label">Ваш результат</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ result.score }}</div>
+                                <div class="stat-label">Правильных</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ wrong_answers }}</div>
+                                <div class="stat-label">Неправильных</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ result.total }}</div>
+                                <div class="stat-label">Всего вопросов</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-card">
+                                <div class="stat-value text-success">{{ earned_xp }}</div>
+                                <div class="stat-label">Получено XP</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if result.passed %}
+                    <div class="alert alert-success mb-4">
+                        <h5><i class="fas fa-award me-2"></i>Достижение разблокировано!</h5>
+                        <p>Вы успешно прошли тест "{{ test.title }}" и заработали {{ earned_xp }} XP!</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning mb-4">
+                        <h5><i class="fas fa-lightbulb me-2"></i>Совет</h5>
+                        <p>Повторите материал урока и попробуйте снова. Для успешного прохождения необходимо набрать не менее 70%.</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="{% url 'lesson_detail' test.lesson.id %}" class="btn btn-primary">
+                            <i class="fas fa-book me-2"></i>Вернуться к уроку
+                        </a>
+                        
+                        {% if not result.passed %}
+                        <a href="{% url 'test_detail' test.id %}" class="btn btn-warning">
+                            <i class="fas fa-redo me-2"></i>Попробовать еще раз
+                        </a>
+                        {% endif %}
+                        
+                        <a href="{% url 'course_detail' test.lesson.course.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-2"></i>К курсу
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.result-card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 2rem;
+    border: 3px solid var(--border-color);
+}
+
+.result-value {
+    font-size: 3.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.result-label {
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+.result-success .fa-check-circle,
+.result-fail .fa-times-circle {
+    animation: pulse 2s infinite;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+</style>
+{% endblock %}

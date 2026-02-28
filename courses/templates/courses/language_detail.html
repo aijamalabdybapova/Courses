@@ -1,0 +1,209 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}{{ language.name }} | LangLearn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Заголовок языка -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="language-icon mb-4">
+                        <i class="{{ language.icon }} fa-4x" style="color: #4361ee;"></i>
+                    </div>
+                    <h1 class="display-5 fw-bold mb-3">{{ language.name }}</h1>
+                    <!-- ВАЖНО: Добавлен фильтр |safe для корректного отображения HTML -->
+                    <div class="lesson-content">
+                        <p class="lead text-muted mb-4">{{ language.description|safe }}</p>
+                    </div>
+                    
+                    <div class="row justify-content-center">
+                        <div class="col-auto">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ language.total_lessons }}</div>
+                                <div class="stat-label">Уроков</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ language.total_words }}</div>
+                                <div class="stat-label">Слов</div>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ language.courses.count }}</div>
+                                <div class="stat-label">Уровней</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Выбор уровня -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-center mb-4">
+                <i class="fas fa-chart-line me-2"></i>Выберите уровень
+            </h2>
+            <p class="text-center text-muted mb-5">
+                Начните с подходящего уровня. Каждый курс состоит из 5 уроков
+            </p>
+        </div>
+    </div>
+
+    <!-- Карточки курсов -->
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card course-card fade-in" 
+                 style="border-left: 6px solid {{ course.color }};">
+                <div class="course-card-header">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <span class="badge {% if course.level == 'A1' %}bg-primary
+                                {% elif course.level == 'A2' %}bg-info
+                                {% elif course.level == 'B1' %}bg-success
+                                {% elif course.level == 'B2' %}bg-warning
+                                {% else %}bg-danger{% endif %} mb-2">
+                                {{ course.get_level_display }}
+                            </span>
+                            <h3 class="h4 mb-2">{{ course.title }}</h3>
+                        </div>
+                        <div class="course-level-icon">
+                            <i class="fas fa-graduation-cap fa-2x" style="color: {{ course.color }}; opacity: 0.7;"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- ВАЖНО: Добавлен фильтр |safe для корректного отображения HTML в описании курса -->
+                    <div class="text-muted mb-3">
+                        {{ course.description|truncatewords:25|safe }}
+                    </div>
+                    
+                    <!-- Прогресс -->
+                    <div class="course-progress">
+                        <div class="course-progress-text">
+                            <span>
+                                <i class="fas fa-check-circle me-1"></i>
+                                Прогресс
+                            </span>
+                            <span>{{ course.progress_percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" 
+                                 style="width: {{ course.progress_percentage }}%; background: {{ course.color }};"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="course-card-body">
+                    <!-- Статистика курса -->
+                    <div class="course-stats">
+                        <div class="course-stat">
+                            <div class="course-stat-number">{{ course.total_lessons }}</div>
+                            <div class="course-stat-label">Уроков</div>
+                        </div>
+                        <div class="course-stat">
+                            <div class="course-stat-number">{{ course.words_count }}</div>
+                            <div class="course-stat-label">Слов</div>
+                        </div>
+                        <div class="course-stat">
+                            <div class="course-stat-number">{{ course.difficulty_percentage }}%</div>
+                            <div class="course-stat-label">Сложность</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Дополнительная информация -->
+                    <div class="course-info mt-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-clock me-2 text-muted"></i>
+                            <small class="text-muted">
+                                ~{{ course.total_lessons|add:"2"|floatformat:"0" }} часов обучения
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-tasks me-2 text-muted"></i>
+                            <small class="text-muted">
+                                {{ course.total_lessons }} уроков, 1 тест
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-star me-2 text-muted"></i>
+                            <small class="text-muted">
+                                {{ course.user_progress }}/{{ course.total_lessons }} уроков пройдено
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопка -->
+                    <div class="course-action mt-4">
+                        <a href="{% url 'course_detail' course.id %}" class="btn btn-primary w-100">
+                            <i class="fas fa-play-circle me-2"></i>
+                            {% if course.user_progress > 0 %}
+                                Продолжить обучение
+                            {% else %}
+                                Начать курс
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-book fa-4x text-muted mb-4"></i>
+                    <h3 class="mb-3">Курсы пока не добавлены</h3>
+                    <p class="text-muted mb-4">Скоро здесь появятся учебные материалы</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.course-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    height: 100%;
+}
+
+.course-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+}
+
+.course-level-icon {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.course-card:hover .course-level-icon {
+    opacity: 1;
+}
+
+.course-info small {
+    font-size: 0.85rem;
+}
+
+.course-stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.course-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+}
+</style>
+{% endblock %}

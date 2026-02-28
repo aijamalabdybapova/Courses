@@ -1,0 +1,169 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Статистика | LangLearn Admin{% endblock %}
+{% block page_title %}Статистика платформы{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<!-- KPI Карточки -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="admin-card text-center">
+            <i class="fas fa-users fa-3x mb-3" style="color: #4361ee;"></i>
+            <h2>{{ total_users }}</h2>
+            <p class="text-muted">Всего пользователей</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-card text-center">
+            <i class="fas fa-check-circle fa-3x mb-3" style="color: #28a745;"></i>
+            <h2>{{ total_lessons_completed }}</h2>
+            <p class="text-muted">Пройдено уроков</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="admin-card text-center">
+            <i class="fas fa-graduation-cap fa-3x mb-3" style="color: #fd7e14;"></i>
+            <h2>{{ total_tests_passed }}</h2>
+            <p class="text-muted">Тестов сдано</p>
+        </div>
+    </div>
+</div>
+
+<!-- График активности -->
+<div class="admin-card mb-4">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">Активность за последние 30 дней</h5>
+    </div>
+    <div style="height: 400px;">
+        <canvas id="activityChart"></canvas>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Статистика по языкам -->
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Прогресс по языкам</h5>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Язык</th>
+                        <th>Уроков</th>
+                        <th>Пройдено</th>
+                        <th>Процент</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in language_stats %}
+                    <tr>
+                        <td><strong>{{ stat.language.name }}</strong></td>
+                        <td>{{ stat.lessons_count }}</td>
+                        <td>{{ stat.completed_count }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress" style="width: 100px; height: 6px; margin-right: 10px;">
+                                    <div class="progress-bar bg-success" style="width: {{ stat.completion_rate }}%"></div>
+                                </div>
+                                <span>{{ stat.completion_rate|floatformat:1 }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Популярные тесты -->
+    <div class="col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h5 class="admin-card-title">Популярные тесты</h5>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Тест</th>
+                        <th>Попыток</th>
+                        <th>Сдали</th>
+                        <th>Ср. балл</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in test_stats %}
+                    <tr>
+                        <td>{{ stat.test.title|truncatechars:30 }}</td>
+                        <td>{{ stat.total_attempts }}</td>
+                        <td>{{ stat.passed_count }}</td>
+                        <td>{{ stat.avg_score|floatformat:1 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Нет данных</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('activityChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [{% for item in daily_activity %}'{{ item.date }}',{% endfor %}],
+            datasets: [
+                {
+                    label: 'Пройдено уроков',
+                    data: [{% for item in daily_activity %}{{ item.lessons }},{% endfor %}],
+                    borderColor: '#4361ee',
+                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Новых пользователей',
+                    data: [{% for item in daily_activity %}{{ item.registrations }},{% endfor %}],
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#e9ecef'
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

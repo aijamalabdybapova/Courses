@@ -1,0 +1,637 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Мой словарь | LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dictionary-container {
+        display: flex;
+        gap: 25px;
+    }
+    
+    /* Боковая панель с языками */
+    .language-sidebar {
+        width: 280px;
+        flex-shrink: 0;
+    }
+    
+    .language-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 12px var(--shadow-color);
+    }
+    
+    .language-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .language-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .language-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+    }
+    
+    .language-stats {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        font-size: 0.9rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-value {
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+    
+    .language-filter-btn {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .language-filter-btn.active {
+        border-color: var(--primary-color);
+        background: rgba(67, 97, 238, 0.05);
+    }
+    
+    .language-filter-btn:hover {
+        border-color: var(--primary-color);
+        transform: translateX(5px);
+    }
+    
+    .language-filter-btn .badge {
+        background: var(--primary-color);
+        color: white;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.75rem;
+    }
+    
+    /* Основной контент словаря */
+    .dictionary-content {
+        flex-grow: 1;
+    }
+    
+    /* Статистика */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+    
+    .stat-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: var(--primary-color);
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-color);
+        line-height: 1.2;
+    }
+    
+    .stat-desc {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    
+    /* Поиск */
+    .search-section {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 25px;
+        border: 1px solid var(--border-color);
+    }
+    
+    .search-form {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .search-input {
+        flex-grow: 1;
+    }
+    
+    .clear-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 8px 15px;
+        border-radius: 10px;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    
+    .clear-filter:hover {
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+    
+    /* Карточки слов */
+    .word-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .word-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .word-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px var(--shadow-color);
+    }
+    
+    .word-card.favorite {
+        border-left: 4px solid #ffc107;
+    }
+    
+    .word-card.learned {
+        border-left: 4px solid #28a745;
+    }
+    
+    .word-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+    
+    .word-main {
+        flex-grow: 1;
+    }
+    
+    .word-text {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 4px;
+    }
+    
+    .word-transcription {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-style: italic;
+    }
+    
+    .word-translation {
+        font-size: 1.1rem;
+        color: var(--success-color);
+        margin-bottom: 8px;
+    }
+    
+    .word-example {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        background: rgba(67, 97, 238, 0.05);
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+        border-left: 3px solid var(--primary-color);
+    }
+    
+    .word-meta {
+        display: flex;
+        gap: 15px;
+        margin-top: 12px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    
+    .word-actions {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .action-btn:hover {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+        transform: scale(1.1);
+    }
+    
+    .action-btn.favorite.active {
+        color: #ffc107;
+        border-color: #ffc107;
+    }
+    
+    .action-btn.learned.active {
+        color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .language-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+    }
+    
+    @media (max-width: 768px) {
+        .dictionary-container {
+            flex-direction: column;
+        }
+        
+        .language-sidebar {
+            width: 100%;
+        }
+        
+        .word-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dictionary-container">
+    <!-- Боковая панель с языками -->
+    <div class="language-sidebar">
+        <div class="language-card">
+            <div class="language-header">
+                <div class="language-icon">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <div>
+                    <div class="language-title">Фильтр по языку</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        Всего: {{ total_words }} слов
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Кнопка "Все языки" -->
+            <a href="{% url 'clear_dictionary_filter' %}" 
+               class="language-filter-btn {% if not current_language_id %}active{% endif %}">
+                <span><i class="fas fa-language me-2"></i>Все языки</span>
+                <span class="badge">{{ total_words }}</span>
+            </a>
+            
+            <!-- Список языков -->
+            {% for stat in language_stats %}
+            <a href="?language={{ stat.language.id }}" 
+               class="language-filter-btn {% if stat.selected %}active{% endif %}">
+                <span>
+                    <i class="{{ stat.language.icon }} me-2"></i>
+                    {{ stat.language.name }}
+                </span>
+                <span class="badge">{{ stat.total }}</span>
+            </a>
+            
+            <!-- Микро-статистика для каждого языка -->
+            {% if stat.total > 0 %}
+            <div class="language-stats">
+                <div class="stat-item">
+                    <div class="stat-value">{{ stat.learned }}</div>
+                    <div class="stat-label">изучено</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stat.favorite }}</div>
+                    <div class="stat-label">в избр.</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ stat.total }}</div>
+                    <div class="stat-label">всего</div>
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Основной контент -->
+    <div class="dictionary-content">
+        <!-- Статистика -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-number">{{ total_words }}</div>
+                <div class="stat-desc">всего слов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                </div>
+                <div class="stat-number">{{ total_learned }}</div>
+                <div class="stat-desc">изучено</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-star" style="color: #ffc107;"></i>
+                </div>
+                <div class="stat-number">{{ total_favorite }}</div>
+                <div class="stat-desc">в избранном</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-number">
+                    {% if total_words > 0 %}
+                        {% widthratio total_learned total_words 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
+                <div class="stat-desc">прогресс</div>
+            </div>
+        </div>
+        
+        <!-- Поиск -->
+        <div class="search-section">
+            <form method="get" class="search-form">
+                {% if current_language_id %}
+                <input type="hidden" name="language" value="{{ current_language_id }}">
+                {% endif %}
+                <div class="search-input">
+                    {{ form.query }}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                </button>
+                {% if request.GET.query or current_language_id %}
+                <a href="{% url 'clear_dictionary_filter' %}" class="clear-filter">
+                    <i class="fas fa-times"></i> Сбросить
+                </a>
+                {% endif %}
+            </form>
+        </div>
+        
+        <!-- Список слов -->
+        <div class="word-grid">
+            {% for user_word in page_obj %}
+            {% with word=user_word.word %}
+            <div class="word-card {% if user_word.is_favorite %}favorite{% endif %} {% if user_word.learned %}learned{% endif %}"
+                 data-word-id="{{ word.id }}">
+                <div class="word-header">
+                    <div class="word-main">
+                        <div class="word-text">{{ word.word }}</div>
+                        {% if word.transcription %}
+                        <div class="word-transcription">{{ word.transcription }}</div>
+                        {% endif %}
+                        <div class="word-translation">{{ word.translation }}</div>
+                    </div>
+                    <div class="word-actions">
+                        <button class="action-btn favorite {% if user_word.is_favorite %}active{% endif %}"
+                                onclick="toggleFavorite({{ word.id }})"
+                                title="{% if user_word.is_favorite %}Удалить из избранного{% else %}Добавить в избранное{% endif %}">
+                            <i class="fas fa-star"></i>
+                        </button>
+                        <button class="action-btn learned {% if user_word.learned %}active{% endif %}"
+                                onclick="markLearned({{ word.id }})"
+                                title="{% if user_word.learned %}Отметить как не изученное{% else %}Отметить как изученное{% endif %}">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                {% if word.example %}
+                <div class="word-example">
+                    <i class="fas fa-quote-left me-1" style="opacity: 0.5;"></i>
+                    {{ word.example }}
+                </div>
+                {% endif %}
+                
+                <div class="word-meta">
+                    <span>
+                        <i class="fas fa-globe me-1"></i>
+                        {{ word.lesson.course.language.name }}
+                    </span>
+                    <span>
+                        <i class="fas fa-layer-group me-1"></i>
+                        Урок {{ word.lesson.order }}
+                    </span>
+                    <span>
+                        <i class="fas fa-eye me-1"></i>
+                        {{ user_word.times_viewed }}
+                    </span>
+                    {% if user_word.learned_at %}
+                    <span>
+                        <i class="fas fa-calendar me-1"></i>
+                        {{ user_word.learned_at|date:"d.m.Y" }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endwith %}
+            {% empty %}
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-book-open fa-4x text-muted mb-4"></i>
+                        <h4 class="mb-3">Словарь пуст</h4>
+                        <p class="text-muted mb-4">
+                            {% if current_language_id %}
+                                В этом языке пока нет слов. Начните изучать уроки!
+                            {% else %}
+                                Начните изучать уроки, чтобы добавлять слова в словарь!
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'language_list' %}" class="btn btn-primary">
+                            <i class="fas fa-book me-2"></i>К языкам
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if current_language_id %}&language={{ current_language_id }}{% endif %}">
+                        &laquo;
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if current_language_id %}&language={{ current_language_id }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if current_language_id %}&language={{ current_language_id }}{% endif %}">
+                        &raquo;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleFavorite(wordId) {
+    fetch(`/dictionary/${wordId}/toggle-favorite/`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем UI без перезагрузки
+            const card = document.querySelector(`.word-card[data-word-id="${wordId}"]`);
+            const btn = card.querySelector('.favorite');
+            if (data.is_favorite) {
+                btn.classList.add('active');
+                card.classList.add('favorite');
+            } else {
+                btn.classList.remove('active');
+                card.classList.remove('favorite');
+            }
+            
+            // Можно показать уведомление
+            showNotification(data.is_favorite ? 'Добавлено в избранное' : 'Удалено из избранного');
+        }
+    });
+}
+
+function markLearned(wordId) {
+    fetch(`/dictionary/${wordId}/mark-learned/`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем UI без перезагрузки
+            const card = document.querySelector(`.word-card[data-word-id="${wordId}"]`);
+            const btn = card.querySelector('.learned');
+            if (data.learned) {
+                btn.classList.add('active');
+                card.classList.add('learned');
+            } else {
+                btn.classList.remove('active');
+                card.classList.remove('learned');
+            }
+            
+            showNotification(data.learned ? 'Слово изучено' : 'Статус изучения снят');
+        }
+    });
+}
+
+function showNotification(message) {
+    // Создаем временное уведомление
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-check-circle me-2"></i>
+            ${message}
+        </div>  
+    `;
+    document.body.appendChild(notification);
+    
+    // Удаляем через 2 секунды
+    setTimeout(() => {
+        notification.remove();
+    }, 2000);
+}
+</script>
+{% endblock %}

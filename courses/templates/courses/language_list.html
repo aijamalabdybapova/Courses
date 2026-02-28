@@ -1,0 +1,162 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Доступные языки | LangLearn{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h1 class="display-5 fw-bold mb-3">
+                <i class="fas fa-globe-americas me-2"></i>Доступные языки
+            </h1>
+            <p class="lead text-muted">
+                Выберите язык для изучения. Каждый курс адаптирован под ваш уровень подготовки.
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for language in languages %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card course-card fade-in">
+                <div class="course-card-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <!-- Уровень языка (если есть) или просто название -->
+                            <span class="course-level course-level-beginner">
+                                Язык
+                            </span>
+                            <h3 class="h4 mb-2">{{ language.name }}</h3>
+                        </div>
+                        <div class="language-flag">
+                            {% if language.name == 'Английский' %}
+                            <i class="fas fa-flag-usa fa-2x text-muted"></i>
+                            {% elif language.name == 'Испанский' %}
+                            <i class="fas fa-sun fa-2x text-muted"></i>
+                            {% elif language.name == 'Французский' %}
+                            <i class="fas fa-flag fa-2x text-muted"></i>
+                            {% elif language.name == 'Немецкий' %}
+                            <i class="fas fa-landmark fa-2x text-muted"></i>
+                            {% elif language.name == 'Итальянский' %}
+                            <i class="fas fa-pizza-slice fa-2x text-muted"></i>
+                            {% elif language.name == 'Японский' %}
+                            <i class="fas fa-torii-gate fa-2x text-muted"></i>
+                            {% else %}
+                            <i class="{{ language.icon|default:'fas fa-language' }} fa-2x text-muted"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="course-card-body">
+                    <p class="text-muted mb-4">{{ language.description|truncatewords:30 }}</p>
+                    
+                    <!-- Прогресс по языку -->
+                    <div class="course-progress">
+                        <div class="course-progress-text">
+                            <span>
+                                <i class="fas fa-chart-line me-1"></i>Прогресс
+                            </span>
+                            <span>{{ language.progress_percentage }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar" 
+                                 style="width: {{ language.progress_percentage }}%;
+                                        background: {% if language.progress_percentage >= 100 %}#28a745{% else %}#4361ee{% endif %};"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Статистика языка -->
+                    <div class="course-stats">
+                        <div class="course-stat">
+                            <div class="course-stat-number">{{ language.total_lessons_count }}</div>
+                            <div class="course-stat-label">Уроков</div>
+                        </div>
+                        <div class="course-stat">
+                            <div class="course-stat-number">{{ language.total_words_count|default:"100+" }}</div>
+                            <div class="course-stat-label">Слов</div>
+                        </div>
+                        <div class="course-stat">
+                            <div class="course-stat-number">
+                                {% if user.is_authenticated %}
+                                {{ language.completed_lessons_count }}
+                                {% else %}
+                                0
+                                {% endif %}
+                            </div>
+                            <div class="course-stat-label">Пройдено</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Информация о языке -->
+                    <div class="course-info mt-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-graduation-cap me-2 text-muted"></i>
+                            <small class="text-muted">
+                                {{ language.courses.count }} уровня
+                            </small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-layer-group me-2 text-muted"></i>
+                            <small class="text-muted">
+                                {{ language.courses.count }} курса по 5 уроков
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопка выбора языка -->
+                    <div class="course-action mt-4">
+                        <a href="{% url 'language_detail' language.id %}" class="btn btn-primary w-100">
+                            <i class="fas fa-play-circle me-2"></i>
+                            {% if language.progress_percentage > 0 %}
+                                Продолжить обучение
+                            {% else %}
+                                Начать изучение
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-language fa-4x text-muted mb-4"></i>
+                    <h3 class="mb-3">Языки пока не добавлены</h3>
+                    <p class="text-muted mb-4">Скоро здесь появятся новые курсы для изучения</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.language-flag {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+.course-card:hover .language-flag {
+    opacity: 1;
+}
+
+.course-progress .progress-bar {
+    transition: width 0.6s ease, background 0.3s ease;
+}
+
+.course-level {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.course-level-beginner {
+    background: rgba(67, 97, 238, 0.2);
+    color: #4361ee;
+}
+</style>
+{% endblock %}

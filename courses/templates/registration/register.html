@@ -1,0 +1,200 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Регистрация | LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Убираем все фоны */
+    body {
+        background: none !important;
+        overflow-x: hidden;
+    }
+    
+    /* Прячем стандартные элементы */
+    .navbar, footer {
+        display: none;
+    }
+    
+    /* Убираем декоративные круги */
+    .decorative-circle {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Фоновое изображение на весь экран -->
+<div class="auth-fullscreen-bg">
+    <img src="{% static 'courses/images/back.jpg' %}" alt="Фон" id="auth-bg-image">
+</div>
+<div class="auth-overlay"></div>
+
+<!-- Основной контент -->
+<div class="auth-page-wrapper">
+    <div class="auth-card-fullscreen">
+        <div class="auth-header-fullscreen">
+            <div class="auth-logo-fullscreen">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h1 class="auth-title-fullscreen">LangLearn</h1>
+            <p class="auth-subtitle-fullscreen">Создайте новый аккаунт</p>
+        </div>
+        
+        <div class="auth-body-fullscreen">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    {{ form.non_field_errors }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="auth-form-group-fullscreen">
+                            <label class="auth-form-label-fullscreen">
+                                <i class="fas fa-user me-1"></i>Имя пользователя
+                            </label>
+                            <input type="text" 
+                                   name="username" 
+                                   class="auth-form-control-fullscreen {% if form.username.errors %}is-invalid{% endif %}"
+                                   placeholder="Введите имя пользователя"
+                                   value="{{ form.username.value|default:'' }}"
+                                   required>
+                            {% if form.username.errors %}
+                            <small class="text-danger d-block mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                {{ form.username.errors }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="auth-form-group-fullscreen">
+                            <label class="auth-form-label-fullscreen">
+                                <i class="fas fa-envelope me-1"></i>Email
+                            </label>
+                            <input type="email" 
+                                   name="email" 
+                                   class="auth-form-control-fullscreen {% if form.email.errors %}is-invalid{% endif %}"
+                                   placeholder="Введите ваш email"
+                                   value="{{ form.email.value|default:'' }}"
+                                   required>
+                            {% if form.email.errors %}
+                            <small class="text-danger d-block mt-1">
+                                <i class="fas fa-exclamation-circle me-1"></i>
+                                {{ form.email.errors }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="auth-form-group-fullscreen">
+                            <label class="auth-form-label-fullscreen">
+                                <i class="fas fa-lock me-1"></i>Пароль
+                            </label>
+                            <input type="password" 
+                                   name="password" 
+                                   id="id_password"
+                                   class="auth-form-control-fullscreen {% if form.password.errors %}is-invalid{% endif %}"
+                                   placeholder="Придумайте пароль"
+                                   required>
+                            <small class="text-muted d-block mt-1">
+                                Минимум 8 символов, буквы и цифры
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="auth-form-group-fullscreen">
+                            <label class="auth-form-label-fullscreen">
+                                <i class="fas fa-lock me-1"></i>Подтверждение пароля
+                            </label>
+                            <input type="password" 
+                                   name="password_confirm" 
+                                   id="id_password_confirm"
+                                   class="auth-form-control-fullscreen"
+                                   placeholder="Повторите пароль"
+                                   required>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                        <label class="form-check-label" for="terms" style="color: var(--text-color); font-size: 0.9rem;">
+                            Я соглашаюсь с <a href="#" style="color: #4361ee;">условиями использования</a> и 
+                            <a href="#" style="color: #4361ee;">политикой конфиденциальности</a>
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" class="auth-submit-btn-fullscreen">
+                    <i class="fas fa-user-plus me-2"></i>Создать аккаунт
+                </button>
+                
+            </form>
+        </div>
+        
+        <div class="auth-footer-fullscreen">
+            Уже есть аккаунт? 
+            <a href="{% url 'login' %}">Войти</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Предзагрузка фонового изображения
+window.addEventListener('load', function() {
+    const bgImage = document.getElementById('auth-bg-image');
+    if (bgImage) {
+        bgImage.style.opacity = '1';
+    }
+});
+
+// Валидация паролей
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const password = document.getElementById('id_password');
+    const passwordConfirm = document.getElementById('id_password_confirm');
+    
+    function validatePassword() {
+        if (password.value !== passwordConfirm.value) {
+            passwordConfirm.setCustomValidity('Пароли не совпадают');
+            passwordConfirm.classList.add('is-invalid');
+            return false;
+        } else {
+            passwordConfirm.setCustomValidity('');
+            passwordConfirm.classList.remove('is-invalid');
+            return true;
+        }
+    }
+    
+    password.onchange = validatePassword;
+    passwordConfirm.onkeyup = validatePassword;
+    
+    form.onsubmit = function() {
+        return validatePassword();
+    };
+});
+
+// Параллакс эффект
+document.addEventListener('mousemove', function(e) {
+    const overlay = document.querySelector('.auth-overlay');
+    if (overlay) {
+        const x = (e.clientX / window.innerWidth - 0.5) * 20;
+        const y = (e.clientY / window.innerHeight - 0.5) * 20;
+        overlay.style.transform = `translate(${x}px, ${y}px)`;
+    }
+});
+</script>
+{% endblock %}

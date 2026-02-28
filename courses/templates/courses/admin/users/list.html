@@ -1,0 +1,140 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Управление пользователями | LangLearn Admin{% endblock %}
+{% block page_title %}Управление пользователями{% endblock %}
+
+{% block content %}
+<!-- Фильтры и поиск -->
+<div class="filters">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Поиск</label>
+            <input type="text" name="search" class="form-control" placeholder="Имя, email..." value="{{ search|default:'' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Роль</label>
+            <select name="role" class="form-control">
+                <option value="">Все роли</option>
+                <option value="user" {% if role == 'user' %}selected{% endif %}>Пользователи</option>
+                <option value="admin" {% if role == 'admin' %}selected{% endif %}>Администраторы</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">
+                <i class="fas fa-search me-2"></i>Поиск
+            </button>
+            <a href="{% url 'admin_users' %}" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">Список пользователей ({{ users.paginator.count }})</h5>
+    </div>
+    
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Пользователь</th>
+                <th>Email</th>
+                <th>Имя</th>
+                <th>Дата регистрации</th>
+                <th>Уровень</th>
+                <th>Роль</th>
+                <th>Статус</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td><strong>{{ user.username }}</strong></td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.first_name }} {{ user.last_name }}</td>
+                <td>{{ user.date_joined|date:"d.m.Y" }}</td>
+                <td>
+                    {% with profile=user.userprofile %}
+                    {% if profile %}
+                    <span class="badge" style="background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white;">
+                        Ур. {{ profile.level }} ({{ profile.xp }} XP)
+                    </span>
+                    {% else %}
+                    -
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% if user.is_staff %}
+                    <span class="badge bg-primary">ADMIN</span>
+                    {% else %}
+                    <span class="badge bg-secondary">USER</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_active %}
+                    <span class="badge bg-success">Активен</span>
+                    {% else %}
+                    <span class="badge bg-danger">Заблокирован</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" action="{% url 'admin_user_toggle_active' user.id %}" style="display: inline;">
+                        {% csrf_token %}
+                        {% if user.is_active %}
+                        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Заблокировать пользователя {{ user.username }}?')">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                        {% else %}
+                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Разблокировать пользователя {{ user.username }}?')">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center text-muted">Пользователи не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Пагинация -->
+    {% if users.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if users.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in users.paginator.page_range %}
+                {% if users.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% elif i > users.number|add:'-3' and i < users.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if users.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

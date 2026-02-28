@@ -1,0 +1,46 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Удаление слова | LangLearn Admin{% endblock %}
+{% block page_title %}Удаление слова{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <div class="text-center">
+        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: var(--danger); margin-bottom: 20px;"></i>
+        <h3>Вы уверены, что хотите удалить слово "{{ word.word }}"?</h3>
+        <p class="text-muted">Это действие нельзя отменить.</p>
+        
+        <div class="mt-4">
+            <table class="table table-bordered" style="max-width: 500px; margin: 0 auto;">
+                <tr>
+                    <th>Слово</th>
+                    <td>{{ word.word }}</td>
+                </tr>
+                <tr>
+                    <th>Перевод</th>
+                    <td>{{ word.translation }}</td>
+                </tr>
+                <tr>
+                    <th>Транскрипция</th>
+                    <td>{{ word.transcription|default:'-' }}</td>
+                </tr>
+                <tr>
+                    <th>Урок</th>
+                    <td>{{ word.lesson.course.language.name }} - {{ word.lesson.title }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-admin-danger">
+                <i class="fas fa-trash me-2"></i>Да, удалить навсегда
+            </button>
+            <a href="{% url 'admin_words' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

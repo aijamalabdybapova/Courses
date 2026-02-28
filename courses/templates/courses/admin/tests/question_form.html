@@ -1,0 +1,182 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | LangLearn Admin{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <form method="post" id="questionForm">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        
+        <div class="mb-3">
+            <label for="{{ form.text.id_for_label }}" class="form-label">{{ form.text.label }}</label>
+            {{ form.text }}
+            {% if form.text.errors %}
+            <div class="text-danger">{{ form.text.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <h5 class="mt-4 mb-3">Варианты ответов</h5>
+        <p class="text-muted small">Отметьте правильный ответ(ы). Обычно только один правильный.</p>
+        
+        <div id="answersContainer">
+            {% if current_answers %}
+                {% for answer in current_answers %}
+                <div class="row mb-2 answer-row">
+                    <div class="col-md-1">
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="is_correct[]" value="{{ forloop.counter0 }}" class="form-check-input" {% if answer.is_correct %}checked{% endif %}>
+                        </div>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" name="answers[]" class="form-control" value="{{ answer.text }}" placeholder="Вариант ответа {{ forloop.counter }}" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-answer" {% if forloop.counter <= 2 %}disabled{% endif %}>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- По умолчанию 4 варианта ответа -->
+                <div class="row mb-2 answer-row">
+                    <div class="col-md-1">
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="is_correct[]" value="0" class="form-check-input" checked>
+                        </div>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" name="answers[]" class="form-control" placeholder="Вариант ответа 1" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-answer" disabled>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row mb-2 answer-row">
+                    <div class="col-md-1">
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="is_correct[]" value="1" class="form-check-input">
+                        </div>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" name="answers[]" class="form-control" placeholder="Вариант ответа 2" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-answer" disabled>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row mb-2 answer-row">
+                    <div class="col-md-1">
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="is_correct[]" value="2" class="form-check-input">
+                        </div>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" name="answers[]" class="form-control" placeholder="Вариант ответа 3" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-answer">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row mb-2 answer-row">
+                    <div class="col-md-1">
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="is_correct[]" value="3" class="form-check-input">
+                        </div>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" name="answers[]" class="form-control" placeholder="Вариант ответа 4" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-answer">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="mt-3">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="addAnswer">
+                <i class="fas fa-plus me-2"></i>Добавить вариант ответа
+            </button>
+        </div>
+        
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-admin-primary">
+                <i class="fas fa-save me-2"></i>{{ action }}
+            </button>
+            <a href="{% url 'admin_questions' test.id %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('answersContainer');
+    const addBtn = document.getElementById('addAnswer');
+    let answerCount = document.querySelectorAll('.answer-row').length;
+    
+    addBtn.addEventListener('click', function() {
+        const newRow = document.createElement('div');
+        newRow.className = 'row mb-2 answer-row';
+        newRow.innerHTML = `
+            <div class="col-md-1">
+                <div class="form-check mt-2">
+                    <input type="checkbox" name="is_correct[]" value="${answerCount}" class="form-check-input">
+                </div>
+            </div>
+            <div class="col-md-10">
+                <input type="text" name="answers[]" class="form-control" placeholder="Вариант ответа ${answerCount + 1}" required>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-answer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(newRow);
+        answerCount++;
+        
+        // Обновляем значения checkbox при добавлении
+        updateCheckboxValues();
+    });
+    
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-answer') || e.target.closest('.remove-answer')) {
+            const row = e.target.closest('.answer-row');
+            if (document.querySelectorAll('.answer-row').length > 2) {
+                row.remove();
+                updateCheckboxValues();
+            }
+        }
+    });
+    
+    function updateCheckboxValues() {
+        const rows = document.querySelectorAll('.answer-row');
+        rows.forEach((row, index) => {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.value = index;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

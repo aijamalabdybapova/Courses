@@ -1,0 +1,80 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}{{ title }} | LangLearn Admin{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="admin-card">
+    <form method="post">
+        {% csrf_token %}
+        
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+        
+        <div class="mb-3">
+            <label for="{{ form.lesson.id_for_label }}" class="form-label">{{ form.lesson.label }}</label>
+            {{ form.lesson }}
+            {% if form.lesson.errors %}
+            <div class="text-danger">{{ form.lesson.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.word.id_for_label }}" class="form-label">{{ form.word.label }}</label>
+                {{ form.word }}
+                {% if form.word.errors %}
+                <div class="text-danger">{{ form.word.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.translation.id_for_label }}" class="form-label">{{ form.translation.label }}</label>
+                {{ form.translation }}
+                {% if form.translation.errors %}
+                <div class="text-danger">{{ form.translation.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.transcription.id_for_label }}" class="form-label">{{ form.transcription.label }}</label>
+                {{ form.transcription }}
+                {% if form.transcription.errors %}
+                <div class="text-danger">{{ form.transcription.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.part_of_speech.id_for_label }}" class="form-label">{{ form.part_of_speech.label }}</label>
+                {{ form.part_of_speech }}
+                {% if form.part_of_speech.errors %}
+                <div class="text-danger">{{ form.part_of_speech.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="{{ form.example.id_for_label }}" class="form-label">{{ form.example.label }}</label>
+            {{ form.example }}
+            {% if form.example.errors %}
+            <div class="text-danger">{{ form.example.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-admin-primary">
+                <i class="fas fa-save me-2"></i>{{ action }}
+            </button>
+            <a href="{% url 'admin_words' %}" class="btn btn-secondary">
+                <i class="fas fa-times me-2"></i>Отмена
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'courses/admin/base_admin.html' %}
+{% load static %}
+
+{% block title %}Управление словами | LangLearn Admin{% endblock %}
+{% block page_title %}Управление словами{% endblock %}
+
+{% block content %}
+<!-- Фильтры и поиск -->
+<div class="filters">
+    <form method="get" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Фильтр по уроку</label>
+            <select name="lesson" class="form-control" onchange="this.form.submit()">
+                <option value="">Все уроки</option>
+                {% for lesson in lessons %}
+                <option value="{{ lesson.id }}" {% if request.GET.lesson == lesson.id|stringformat:"i" %}selected{% endif %}>
+                    {{ lesson.course.language.name }} - {{ lesson.course.get_level_display }}: {{ lesson.title|truncatechars:30 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Поиск</label>
+            <input type="text" name="search" class="form-control" placeholder="Слово или перевод..." value="{{ search|default:'' }}">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">
+                <i class="fas fa-search me-2"></i>Применить
+            </button>
+            <a href="{% url 'admin_words' %}" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h5 class="admin-card-title">Список слов ({{ words.paginator.count }})</h5>
+        <a href="{% url 'admin_word_create' %}" class="btn btn-admin-primary">
+            <i class="fas fa-plus me-2"></i>Добавить слово
+        </a>
+    </div>
+    
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Слово</th>
+                <th>Перевод</th>
+                <th>Транскрипция</th>
+                <th>Часть речи</th>
+                <th>Урок</th>
+                <th>Пример</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for word in words %}
+            <tr>
+                <td>{{ word.id }}</td>
+                <td><strong>{{ word.word }}</strong></td>
+                <td>{{ word.translation }}</td>
+                <td><em>{{ word.transcription|default:'-' }}</em></td>
+                <td>{{ word.part_of_speech|default:'-' }}</td>
+                <td>{{ word.lesson.course.language.name }} - ур.{{ word.lesson.order }}</td>
+                <td>{{ word.example|truncatechars:30|default:'-' }}</td>
+                <td>
+                    <a href="{% url 'admin_word_edit' word.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'admin_word_delete' word.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center text-muted">Слова не найдены</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Пагинация -->
+    {% if words.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if words.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ words.previous_page_number }}{% if request.GET.lesson %}&lesson={{ request.GET.lesson }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+            {% endif %}
+            
+            {% for i in words.paginator.page_range %}
+                {% if words.number == i %}
+                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                {% elif i > words.number|add:'-3' and i < words.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}{% if request.GET.lesson %}&lesson={{ request.GET.lesson }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ i }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if words.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ words.next_page_number }}{% if request.GET.lesson %}&lesson={{ request.GET.lesson }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
