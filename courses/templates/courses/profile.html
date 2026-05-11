@@ -3,65 +3,163 @@
 
 {% block title %}Профиль - {{ user.username }} | LangLearn{% endblock %}
 
+{% block extra_css %}
+<style>
+.profile-avatar {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-avatar img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--primary-color);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.avatar-upload {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.avatar-upload:hover {
+    transform: scale(1.1);
+    background: var(--secondary-color);
+}
+
+.avatar-upload i {
+    color: white;
+    font-size: 1.2rem;
+}
+
+.avatar-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 1rem;
+    display: block;
+    border: 3px solid var(--primary-color);
+}
+
+.stat-box {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.progress-bar-custom {
+    height: 10px;
+    background: var(--border-color);
+    border-radius: 5px;
+    overflow: hidden;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="profile-page">
+<div class="container">
     <div class="row">
+        <!-- Левая колонка - Аватар и информация -->
         <div class="col-md-4">
-            <!-- Информация о профиле -->
-            <div class="card mb-4">
+            <div class="card">
                 <div class="card-body text-center">
                     <div class="profile-avatar mb-3">
                         {% if profile.avatar %}
-                            <img src="{{ profile.avatar.url }}" alt="{{ user.username }}" 
-                                 class="avatar-img" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                            <img src="{{ profile.avatar.url }}" alt="{{ user.username }}">
                         {% elif profile.avatar_url %}
-                            <img src="{{ profile.avatar_url }}" alt="{{ user.username }}" 
-                                 class="avatar-img" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover;">
+                            <img src="{{ profile.avatar_url }}" alt="{{ user.username }}">
                         {% else %}
-                            <div class="avatar-circle" style="background-color: #2b4eff; color: white; width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
-                                <span class="avatar-text" style="font-size: 2.5rem;">{{ user.username|first|upper }}</span>
+                            <div class="avatar-circle" style="width: 150px; height: 150px; border-radius: 50%; background: linear-gradient(135deg, #4361ee, #3a0ca3); display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                                <span style="font-size: 3rem; color: white;">{{ user.username|first|upper }}</span>
                             </div>
                         {% endif %}
                     </div>
-                    <h3>{{ user.get_full_name|default:user.username }}</h3>
+                    
+                    <h3>{{ user.username }}</h3>
                     <p class="text-muted">{{ user.email }}</p>
                     
-                    <div class="level-info mt-4">
-                        <div class="level-badge">
-                            <span class="badge bg-primary">Уровень {{ level }}</span>
-                        </div>
-                        <div class="xp-progress mt-2">
-                            <div class="d-flex justify-content-between">
-                                <small>Опыт: {{ profile.xp }} XP</small>
-                                <small>До {{ xp_for_next_level }} XP</small>
+                    <div class="mt-4">
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="stat-box">
+                                    <div class="stat-number">{{ profile.xp }}</div>
+                                    <div class="stat-label">XP</div>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar" role="progressbar" 
-                                     style="width: {{ xp_progress }}%">
+                            <div class="col-6">
+                                <div class="stat-box">
+                                    <div class="stat-number">{{ level }}</div>
+                                    <div class="stat-label">Уровень</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Форма редактирования профиля -->
+        </div>
+        
+        <!-- Правая колонка - Форма редактирования -->
+        <div class="col-md-8">
             <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Редактировать профиль</h4>
+                </div>
                 <div class="card-body">
-                    <h4>Настройки профиля</h4>
-                    
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
-                        <h5 class="mt-3">Личная информация</h5>
+                        {% if user_form.non_field_errors or profile_form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in user_form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                            {% for error in profile_form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="{{ user_form.first_name.id_for_label }}" class="form-label">Имя</label>
                                 {{ user_form.first_name }}
+                                {% if user_form.first_name.errors %}
+                                <div class="text-danger small">{{ user_form.first_name.errors }}</div>
+                                {% endif %}
                             </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label for="{{ user_form.last_name.id_for_label }}" class="form-label">Фамилия</label>
                                 {{ user_form.last_name }}
+                                {% if user_form.last_name.errors %}
+                                <div class="text-danger small">{{ user_form.last_name.errors }}</div>
+                                {% endif %}
                             </div>
                         </div>
                         
@@ -69,134 +167,90 @@
                             <label for="{{ user_form.email.id_for_label }}" class="form-label">Email</label>
                             {{ user_form.email }}
                             {% if user_form.email.errors %}
-                            <div class="text-danger">{{ user_form.email.errors }}</div>
+                            <div class="text-danger small">{{ user_form.email.errors }}</div>
                             {% endif %}
                         </div>
                         
-                        <h5 class="mt-4">О себе</h5>
                         <div class="mb-3">
-                            <label for="{{ profile_form.bio.id_for_label }}" class="form-laorm-label">Загрузить фото</label>
-                            {{ profile_form.avatar }}
-                            <div class="form-text">Поддерживаемые форматы: JPG, PNG, GIF. Максимальный размер: 2MB</div>
-                        </div>
-                        
-                        <h5 class="mt-4">Настройки обучения</h5>
-                        
-                        
-                        <div class="mb-3">
-                            <label for="{{ profile_form.daily_goal_minutes.id_for_lbel">Биография</label>
+                            <label for="{{ profile_form.bio.id_for_label }}" class="form-label">О себе</label>
                             {{ profile_form.bio }}
+                            {% if profile_form.bio.errors %}
+                            <div class="text-danger small">{{ profile_form.bio.errors }}</div>
+                            {% endif %}
                         </div>
                         
-                        <h5 class="mt-4">Аватар</h5>
-                        <div class="mb-3">
-                            <label for="{{ profile_form.avatar.id_for_label }}" class="fabel }}" class="form-label">Ежедневная цель (минут)</label>
-                            {{ profile_form.daily_goal_minutes }}
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-100">
-                            Сохранить изменения
-                        </button>
-                    </form>
-                    
-                    <hr>
-                    <a href="{% url 'change_password' %}" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-key"></i> Сменить пароль
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-8">
-            <!-- Статистика -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4>📊 Ваша статистика</h4>
-                    <div class="row mt-3">
-                        <div class="col-md-3 col-6 text-center mb-3">
-                            <div class="stat-number">{{ stats.total_lessons_completed }}</div>
-                            <div class="stat-label">Уроков пройдено</div>
-                        </div>
-                        <div class="col-md-3 col-6 text-center mb-3">
-                            <div class="stat-number">{{ stats.total_tests }}</div>
-                            <div class="stat-label">Тестов пройдено</div>
-                        </div>
-                        <div class="col-md-3 col-6 text-center mb-3">
-                            <div class="stat-number">{{ stats.avg_test_score }}%</div>
-                            <div class="stat-label">Средний балл</div>
-                        </div>
-                        <div class="col-md-3 col-6 text-center mb-3">
-                            <div class="stat-number">{{ stats.streak_days }}</div>
-                            <div class="stat-label">Дней подряд</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Прогресс по языкам -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h4>🌍 Прогресс по языкам</h4>
-                    {% for lang in languages_progress %}
-                    <div class="language-progress-item mb-3">
-                        <div class="d-flex justify-content-between mb-1">
-                            <span>{{ lang.language.name }}</span>
-                            <span>{{ lang.completed }}/{{ lang.total }} уроков</span>
-                        </div>
-                        <div class="progress" style="height: 10px;">
-                            <div class="progress-bar" role="progressbar" 
-                                 style="width: {{ lang.percentage }}%">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ profile_form.current_language.id_for_label }}" class="form-label">Изучаемый язык</label>
+                                {{ profile_form.current_language }}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ profile_form.daily_goal_minutes.id_for_label }}" class="form-label">Дневная цель (минуты)</label>
+                                {{ profile_form.daily_goal_minutes }}
                             </div>
                         </div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted">Начните изучать языки, чтобы увидеть прогресс!</p>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- История активности -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5>📚 Последние уроки</h5>
-                            {% if progress %}
-                            <ul class="list-unstyled">
-                                {% for p in progress|slice:":5" %}
-                                <li class="mb-2">
-                                    <i class="fas fa-check text-success me-2"></i>
-                                    {{ p.lesson.title }}
-                                    <br>
-                                    <small class="text-muted">{{ p.completed_at|date:"d.m.Y" }}</small>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% else %}
-                            <p class="text-muted">Уроки еще не пройдены</p>
+                        
+                        <div class="mb-3">
+                            <label for="{{ profile_form.avatar.id_for_label }}" class="form-label">Загрузить аватар</label>
+                            {{ profile_form.avatar }}
+                            <small class="text-muted d-block mt-1">{{ profile_form.avatar.help_text }}</small>
+                            {% if profile.avatar %}
+                            <div class="mt-2">
+                                <img src="{{ profile.avatar.url }}" alt="Current avatar" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+                                <small class="text-muted ms-2">Текущий аватар</small>
+                            </div>
                             {% endif %}
                         </div>
-                    </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ profile_form.avatar_url.id_for_label }}" class="form-label">Или ссылка на аватар</label>
+                            {{ profile_form.avatar_url }}
+                            <small class="text-muted d-block mt-1">{{ profile_form.avatar_url.help_text }}</small>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Сохранить изменения
+                            </button>
+                            <a href="{% url 'change_password' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-key me-2"></i>Сменить пароль
+                            </a>
+                        </div>
+                    </form>
                 </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5>📝 Результаты тестов</h5>
-                            {% if results %}
-                            <ul class="list-unstyled">
-                                {% for r in results|slice:":5" %}
-                                <li class="mb-2">
-                                    <i class="fas fa-file-alt text-primary me-2"></i>
-                                    {{ r.test.title }}
-                                    <br>
-                                    <small>{{ r.score }}/{{ r.total }} баллов ({{ r.percentage|floatformat:0 }}%)</small>
-                                    <small class="text-muted ms-2">{{ r.created_at|date:"d.m.Y" }}</small>
-                                </li>
-                                {% endfor %}
-                            </ul>
-                            {% else %}
-                            <p class="text-muted">Тесты еще не пройдены</p>
-                            {% endif %}
+            </div>
+            
+            <!-- Статистика -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h4 class="mb-0">Статистика</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-number">{{ stats.total_lessons_completed }}</div>
+                                <div class="stat-label">Уроков</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-number">{{ stats.total_tests }}</div>
+                                <div class="stat-label">Тестов</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-number">{{ stats.avg_test_score }}%</div>
+                                <div class="stat-label">Средний балл</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="stat-box">
+                                <div class="stat-number">{{ stats.streak_days }}</div>
+                                <div class="stat-label">Дней подряд</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -204,58 +258,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.profile-avatar .avatar-circle {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    font-size: 2rem;
-    font-weight: bold;
-}
-
-.profile-avatar img {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid var(--primary-color);
-}
-
-.stat-number {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: var(--primary-color);
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: #6c757d;
-}
-
-.language-progress-item {
-    padding: 5px 0;
-}
-
-.level-badge .badge {
-    font-size: 1rem;
-    padding: 5px 15px;
-}
-
-/* Стили для форм */
-.form-control, .form-select {
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
-}
-</style>
 {% endblock %}

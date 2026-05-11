@@ -140,16 +140,15 @@
     stroke: var(--primary-color);
     stroke-width: 8;
     stroke-linecap: round;
-    stroke-dasharray: 439.8;  /* 2 * π * 70 (радиус круга) = 2 * 3.14 * 70 */
-    stroke-dashoffset: 439.8; /* Начальное значение - полностью скрыт */
+    stroke-dasharray: 439.8;
+    stroke-dashoffset: 439.8;
     transform: rotate(-90deg);
     transform-origin: center;
     transition: stroke-dashoffset 1s ease, stroke 0.5s ease;
 }
 
-/* Для 100% прогресса */
 .goal-progress-circle-fill.completed {
-    stroke: #28a745; /* Зеленый цвет для достигнутой цели */
+    stroke: #28a745;
     animation: pulse-success 2s infinite;
 }
 
@@ -171,7 +170,7 @@
 }
 
 .goal-progress-percentage.completed {
-    color: #28a745; /* Зеленый цвет для текста */
+    color: #28a745;
 }
 
 .goal-goal-label {
@@ -271,6 +270,7 @@
     color: var(--text-muted);
     margin-top: 0.25rem;
 }
+
 @keyframes pulse-success {
     0% {
         box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
@@ -283,14 +283,6 @@
     }
 }
 
-@keyframes fill-progress {
-    from {
-        stroke-dashoffset: 439.8;
-    }
-    to {
-        stroke-dashoffset: calc(439.8 - (439.8 * var(--progress-percentage, 0) / 100));
-    }
-}
 /* Адаптивность */
 @media (max-width: 768px) {
     .dashboard-stats {
@@ -315,216 +307,274 @@
 {% endblock %}
 
 {% block content %}
-<div class="dashboard">
-    <div class="row">
-        <!-- Левая колонка - основная статистика -->
-        <div class="col-lg-8">
-            <!-- Статистика пользователя -->
-            <div class="dashboard-stats">
-                <div class="dashboard-stat-card">
-                    <div class="dashboard-stat-icon">
-                        <i class="fas fa-book-open"></i>
-                    </div>
-                    <div class="dashboard-stat-number">{{ stats.total_lessons_completed }}</div>
-                    <div class="dashboard-stat-label">Уроков пройдено</div>
-                </div>
-                
-                <div class="dashboard-stat-card">
-                    <div class="dashboard-stat-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <div class="dashboard-stat-number">{{ stats.total_tests }}</div>
-                    <div class="dashboard-stat-label">Тестов пройдено</div>
-                </div>
-                
-                <div class="dashboard-stat-card">
-                    <div class="dashboard-stat-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="dashboard-stat-number">{{ stats.avg_test_score }}%</div>
-                    <div class="dashboard-stat-label">Средний балл</div>
-                </div>
-                
-                <div class="dashboard-stat-card">
-                    <div class="dashboard-stat-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <div class="dashboard-stat-number">{{ stats.xp }}</div>
-                    <div class="dashboard-stat-label">Опыта (Ур. {{ stats.level }})</div>
-                </div>
-            </div>
-
-            <!-- Прогресс по языкам -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h3 class="card-title mb-4">
-                        <i class="fas fa-globe-americas me-2"></i>Прогресс по языкам
-                    </h3>
-                    
-                    {% for lang in languages_progress %}
-                    <div class="language-progress-card">
-                        <div class="language-progress-header">
-                            <div class="language-progress-title">
-                                {{ lang.language.name }}
-                            </div>
-                            <div class="language-progress-percentage">
-                                {{ lang.percentage }}%
-                            </div>
-                        </div>
-                        
-                        <div class="language-progress-bar">
-                            <div class="language-progress-fill" style="width: {{ lang.percentage }}%"></div>
-                        </div>
-                        
-                        <div class="language-progress-info">
-                            <span>Пройдено уроков: {{ lang.completed }}/{{ lang.total }}</span>
-                            <span>{{ lang.percentage }}% завершено</span>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-language fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Начните изучать языки, чтобы увидеть прогресс</p>
-                        <a href="{% url 'language_list' %}" class="btn btn-primary">
-                            <i class="fas fa-play me-2"></i>Начать обучение
-                        </a>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+{% with profile=user.userprofile %}
+    {% if profile.is_moderator %}
+        <!-- Перенаправляем модераторов -->
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle me-2"></i>
+            Вы вошли как модератор. 
+            <a href="{% url 'moderator_dashboard' %}" class="alert-link">Перейти в панель модератора</a>
         </div>
-
-        <!-- Правая колонка - боковая панель -->
-        <div class="col-lg-4">
-            <!-- Ежедневная цель -->
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    <h3 class="card-title mb-4">
-                        <i class="fas fa-bullseye me-2"></i>Ежедневная цель
-                    </h3>
-                    
-                    <div class="goal-progress-circle">
-                        <svg>
-                            <circle class="goal-progress-circle-bg" cx="75" cy="75" r="70"></circle>
-                            <circle class="goal-progress-circle-fill" 
-                                    cx="75" cy="75" r="70"
-                                    id="goal-progress-fill"></circle>
-                        </svg>
-                        <div class="goal-progress-circle-text">
-                            <div class="goal-progress-percentage" id="goal-percentage">{{ goal_percentage|floatformat:0 }}%</div>
-                            <div class="goal-goal-label">
-                                {{ today_study }} / {{ user.userprofile.daily_goal_minutes }} мин
+        <script>
+            window.location.href = "{% url 'moderator_dashboard' %}";
+        </script>
+    {% elif profile.is_admin %}
+        <!-- Перенаправляем администраторов -->
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle me-2"></i>
+            Вы вошли как администратор. 
+            <a href="{% url 'admin_dashboard' %}" class="alert-link">Перейти в админ-панель</a>
+        </div>
+        <script>
+            window.location.href = "{% url 'admin_dashboard' %}";
+        </script>
+    {% else %}
+        <!-- Контент для студентов -->
+        <div class="dashboard">
+            <div class="row">
+                <!-- Левая колонка - основная статистика -->
+                <div class="col-lg-8">
+                    <!-- Статистика пользователя -->
+                    <div class="dashboard-stats">
+                        <div class="dashboard-stat-card">
+                            <div class="dashboard-stat-icon">
+                                <i class="fas fa-book-open"></i>
                             </div>
+                            <div class="dashboard-stat-number">{{ stats.total_lessons_completed }}</div>
+                            <div class="dashboard-stat-label">Уроков пройдено</div>
                         </div>
-                    </div>
-                    
-                    <p class="text-muted mb-3">
-                        {% if goal_percentage >= 100 %}
-                         Цель достигнута!
-                        {% elif goal_percentage >= 70 %}
-                        Отличный прогресс!
-                        {% elif goal_percentage >= 30 %}
-                        Продолжайте в том же духе!
-                        {% else %}
-                        Начните учиться сегодня
-                        {% endif %}
-                    </p>
-                    <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-cog me-1"></i>Настроить цель
-                    </a>
-                </div>
-            </div>
-
-            <!-- Серия дней -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="streak-card">
-                        <div class="streak-fire">
-                            <i class="fas fa-fire"></i>
-                        </div>
-                        <div class="streak-number">{{ stats.streak_days }}</div>
-                        <div class="streak-label">дней подряд</div>
-                        <small class="text-muted mt-2 d-block">Держите серию, изучая каждый день!</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Последняя активность -->
-            <div class="card">
-                <div class="card-body">
-                    <h3 class="card-title mb-4">
-                        <i class="fas fa-history me-2"></i>Последняя активность
-                    </h3>
-                    
-                    <div class="activity-timeline">
-                        {% for activity in recent_activity %}
-                        <div class="activity-item">
-                            <div class="activity-icon">
-                                {% if activity.type == 'lesson' %}
-                                <i class="fas fa-book"></i>
-                                {% else %}
+                        
+                        <div class="dashboard-stat-card">
+                            <div class="dashboard-stat-icon">
                                 <i class="fas fa-graduation-cap"></i>
-                                {% endif %}
+                            </div>
+                            <div class="dashboard-stat-number">{{ stats.total_tests }}</div>
+                            <div class="dashboard-stat-label">Тестов пройдено</div>
+                        </div>
+                        
+                        <div class="dashboard-stat-card">
+                            <div class="dashboard-stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="dashboard-stat-number">{{ stats.avg_test_score }}%</div>
+                            <div class="dashboard-stat-label">Средний балл</div>
+                        </div>
+                        
+                        <div class="dashboard-stat-card">
+                            <div class="dashboard-stat-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="dashboard-stat-number">{{ stats.xp }}</div>
+                            <div class="dashboard-stat-label">Опыта (Ур. {{ stats.level }})</div>
+                        </div>
+                    </div>
+
+                    <!-- Прогресс по языкам -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">
+                                <i class="fas fa-globe-americas me-2"></i>Прогресс по языкам
+                            </h3>
+                            
+                            {% for lang in languages_progress %}
+                            <div class="language-progress-card">
+                                <div class="language-progress-header">
+                                    <div class="language-progress-title">
+                                        {{ lang.language.name }}
+                                    </div>
+                                    <div class="language-progress-percentage">
+                                        {{ lang.percentage }}%
+                                    </div>
+                                </div>
+                                
+                                <div class="language-progress-bar">
+                                    <div class="language-progress-fill" style="width: {{ lang.percentage }}%"></div>
+                                </div>
+                                
+                                <div class="language-progress-info">
+                                    <span>Пройдено уроков: {{ lang.completed }}/{{ lang.total }}</span>
+                                    <span>{{ lang.percentage }}% завершено</span>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-language fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Начните изучать языки, чтобы увидеть прогресс</p>
+                                <a href="{% url 'language_list' %}" class="btn btn-primary">
+                                    <i class="fas fa-play me-2"></i>Начать обучение
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка - боковая панель -->
+                <div class="col-lg-4">
+                    <!-- Ежедневная цель -->
+                    <div class="card mb-4">
+                        <div class="card-body text-center">
+                            <h3 class="card-title mb-4">
+                                <i class="fas fa-bullseye me-2"></i>Ежедневная цель
+                            </h3>
+                            
+                            <div class="goal-progress-circle">
+                                <svg>
+                                    <circle class="goal-progress-circle-bg" cx="75" cy="75" r="70"></circle>
+                                    <circle class="goal-progress-circle-fill" 
+                                            cx="75" cy="75" r="70"
+                                            id="goal-progress-fill"></circle>
+                                </svg>
+                                <div class="goal-progress-circle-text">
+                                    <div class="goal-progress-percentage" id="goal-percentage">{{ goal_percentage|floatformat:0 }}%</div>
+                                    <div class="goal-goal-label">
+                                        {{ today_study }} / {{ user.userprofile.daily_goal_minutes }} мин
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="activity-time">
-                                {{ activity.date|date:"d.m.Y H:i" }}
-                            </div>
-                            
-                            <div class="activity-text">
-                                {% if activity.type == 'lesson' %}
-                                📚 {{ activity.title }}
+                            <p class="text-muted mb-3">
+                                {% if goal_percentage >= 100 %}
+                                 Цель достигнута! Отлично!
+                                {% elif goal_percentage >= 70 %}
+                                Отличный прогресс! Осталось немного!
+                                {% elif goal_percentage >= 30 %}
+                                Продолжайте в том же духе!
                                 {% else %}
-                                📝 {{ activity.title }}
+                                 Начните учиться сегодня
                                 {% endif %}
+                            </p>
+                            <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-cog me-1"></i>Настроить цель
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Серия дней -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="streak-card">
+                                <div class="streak-fire">
+                                    <i class="fas fa-fire"></i>
+                                </div>
+                                <div class="streak-number">{{ stats.streak_days }}</div>
+                                <div class="streak-label">дней подряд</div>
+                                <small class="text-muted mt-2 d-block">Держите серию, изучая каждый день!</small>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Связаться с модератором -->
+                    {% if not profile.is_moderator and not profile.is_admin %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-user-tie me-2"></i>Связаться с модератором
+                                </h5>
+                                {% with student_relation=user.my_moderators.first %}
+                                    {% if student_relation %}
+                                        <a href="{% url 'chat_create' %}?user_id={{ student_relation.moderator.id }}&type=moderator" 
+                                        class="btn btn-outline-primary w-100">
+                                            <i class="fas fa-comment-dots me-2"></i>Написать модератору
+                                        </a>
+                                        <small class="text-muted d-block mt-2">
+                                            Ваш модератор: {{ student_relation.moderator.username }}
+                                        </small>
+                                    {% else %}
+                                        <p class="text-muted small mb-0">
+                                            У вас пока нет назначенного модератора.<br>
+                                            Обратитесь к администратору.
+                                        </p>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Чаты -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h5 class="mb-3">
+                                <i class="fas fa-comments me-2"></i>Сообщения
+                            </h5>
+                            <a href="{% url 'chat_list' %}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-envelope me-2"></i>Перейти в чат
+                                <span id="unread-badge" class="badge bg-danger ms-2" style="display: none;"></span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Последняя активность -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title mb-4">
+                                <i class="fas fa-history me-2"></i>Последняя активность
+                            </h3>
                             
-                            {% if activity.type == 'test' %}
-                            <div class="activity-details">
-                                Результат: {{ activity.score }}
+                            <div class="activity-timeline">
+                                {% for activity in recent_activity %}
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        {% if activity.type == 'lesson' %}
+                                        <i class="fas fa-book"></i>
+                                        {% else %}
+                                        <i class="fas fa-graduation-cap"></i>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="activity-time">
+                                        {{ activity.date|date:"d.m.Y H:i" }}
+                                    </div>
+                                    
+                                    <div class="activity-text">
+                                        {% if activity.type == 'lesson' %}
+                                        📚 {{ activity.title }}
+                                        {% else %}
+                                        📝 {{ activity.title }}
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if activity.type == 'test' %}
+                                    <div class="activity-details">
+                                        Результат: {{ activity.score }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-3">
+                                    <p class="text-muted">Активность отсутствует</p>
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% endif %}
                         </div>
-                        {% empty %}
-                        <div class="text-center py-3">
-                            <p class="text-muted">Активность отсутствует</p>
-                        </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    {% endif %}
+{% endwith %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const goalPercentage = parseFloat('{{ goal_percentage }}');
+    const goalPercentage = parseFloat('{{ goal_percentage|default:0 }}');
     const goalCircle = document.getElementById('goal-progress-fill');
     const percentageText = document.getElementById('goal-percentage');
     
     if (goalCircle && !isNaN(goalPercentage)) {
-        // Рассчитываем правильный offset
-        const circumference = 439.8; // 2 * π * r, где r=70
-        const offset = circumference - (goalPercentage / 100 * circumference);
+        const circumference = 439.8;
+        let offset = circumference - (goalPercentage / 100 * circumference);
         
-        // Применяем вычисления
+        // Ограничиваем offset от 0 до circumference
+        offset = Math.max(0, Math.min(circumference, offset));
+        
         goalCircle.style.strokeDashoffset = offset;
         
-        // Если цель достигнута (100% или больше)
         if (goalPercentage >= 100) {
             goalCircle.classList.add('completed');
-            percentageText.classList.add('completed');
-            goalCircle.style.stroke = '#28a745'; // Зеленый цвет
-            
-            // Гарантируем полный круг (0 offset)
+            if (percentageText) percentageText.classList.add('completed');
+            goalCircle.style.stroke = '#28a745';
             goalCircle.style.strokeDashoffset = 0;
         }
-        
-        console.log('Goal percentage:', goalPercentage);
-        console.log('Circumference:', circumference);
-        console.log('Calculated offset:', offset);
-        console.log('Applied offset:', goalCircle.style.strokeDashoffset);
     }
 });
 </script>

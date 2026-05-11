@@ -263,6 +263,15 @@
             border: none;
         }
         
+        /* Alert для ограничения доступа */
+        .access-denied {
+            background: linear-gradient(135deg, #f72585, #b5179e);
+            color: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+        }
+        
         /* Адаптивность */
         @media (max-width: 768px) {
             .admin-sidebar {
@@ -279,121 +288,138 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Сайдбар -->
-    <div class="admin-sidebar">
-        <div class="sidebar-logo">
-            <h2>📚 LangLearn</h2>
-            <p>Панель управления</p>
+    <!-- Проверка доступа: только администраторы -->
+    {% if user.is_authenticated and user.userprofile.is_admin or user.is_superuser %}
+        <!-- Сайдбар -->
+        <div class="admin-sidebar">
+            <div class="sidebar-logo">
+                <h2>📚 LangLearn</h2>
+                <p>Панель управления</p>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Дашборд</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_languages' %}" class="{% if 'languages' in request.path %}active{% endif %}">
+                        <i class="fas fa-globe"></i>
+                        <span>Языки</span>
+                        <span class="badge">{{ total_languages|default:"0" }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_courses' %}" class="{% if 'courses' in request.path %}active{% endif %}">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Курсы</span>
+                        <span class="badge">{{ total_courses|default:"0" }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_lessons' %}" class="{% if 'lessons' in request.path %}active{% endif %}">
+                        <i class="fas fa-book"></i>
+                        <span>Уроки</span>
+                        <span class="badge">{{ total_lessons|default:"0" }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_words' %}" class="{% if 'words' in request.path %}active{% endif %}">
+                        <i class="fas fa-font"></i>
+                        <span>Слова</span>
+                        <span class="badge">{{ total_words|default:"0" }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_tests' %}" class="{% if 'tests' in request.path %}active{% endif %}">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Тесты</span>
+                        <span class="badge">{{ total_tests|default:"0" }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_users' %}" class="{% if 'users' in request.path %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span>Пользователи</span>
+                        <span class="badge">{{ total_users|default:"0" }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_statistics' %}" class="{% if 'statistics' in request.path %}active{% endif %}">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Статистика</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin_audit_log' %}" class="{% if 'audit' in request.path %}active{% endif %}">
+                        <i class="fas fa-history"></i>
+                        <span>Журнал аудита</span>
+                    </a>
+                </li>
+                <li style="margin-top: 30px;">
+                    <a href="{% url 'home' %}" target="_blank">
+                        <i class="fas fa-external-link-alt"></i>
+                        <span>На сайт</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'admin:index' %}" target="_blank">
+                        <i class="fas fa-database"></i>
+                        <span>Django Admin</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Выйти</span>
+                    </a>
+                </li>
+            </ul>
         </div>
         
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{% url 'admin_dashboard' %}" class="{% if request.resolver_match.url_name == 'admin_dashboard' %}active{% endif %}">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Дашборд</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_languages' %}" class="{% if 'languages' in request.path %}active{% endif %}">
-                    <i class="fas fa-globe"></i>
-                    <span>Языки</span>
-                    <span class="badge">{{ total_languages|default:"0" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_courses' %}" class="{% if 'courses' in request.path %}active{% endif %}">
-                    <i class="fas fa-layer-group"></i>
-                    <span>Курсы</span>
-                    <span class="badge">{{ total_courses|default:"0" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_lessons' %}" class="{% if 'lessons' in request.path %}active{% endif %}">
-                    <i class="fas fa-book"></i>
-                    <span>Уроки</span>
-                    <span class="badge">{{ total_lessons|default:"0" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_words' %}" class="{% if 'words' in request.path %}active{% endif %}">
-                    <i class="fas fa-font"></i>
-                    <span>Слова</span>
-                    <span class="badge">{{ total_words|default:"0" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_tests' %}" class="{% if 'tests' in request.path %}active{% endif %}">
-                    <i class="fas fa-question-circle"></i>
-                    <span>Тесты</span>
-                    <span class="badge">{{ total_tests|default:"0" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_users' %}" class="{% if 'users' in request.path %}active{% endif %}">
-                    <i class="fas fa-users"></i>
-                    <span>Пользователи</span>
-                    <span class="badge">{{ total_users|default:"0" }}</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_statistics' %}" class="{% if 'statistics' in request.path %}active{% endif %}">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Статистика</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin_audit_log' %}" class="{% if 'audit' in request.path %}active{% endif %}">
-                    <i class="fas fa-history"></i>
-                    <span>Журнал аудита</span>
-                </a>
-            </li>
-            <li style="margin-top: 30px;">
-                <a href="{% url 'home' %}" target="_blank">
-                    <i class="fas fa-external-link-alt"></i>
-                    <span>На сайт</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'admin:index' %}" target="_blank">
-                    <i class="fas fa-database"></i>
-                    <span>Django Admin</span>
-                </a>
-            </li>
-            <li>
-                <a href="{% url 'logout' %}">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Выйти</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-    
-    <!-- Основной контент -->
-    <div class="admin-content">
-        <div class="admin-topbar">
-            <h1 class="page-title">{% block page_title %}Дашборд{% endblock %}</h1>
-            
-            <div class="user-info">
-                <span>{{ user.username }}</span>
-                <div class="user-avatar">
-                    {{ user.username|first|upper }}
+        <!-- Основной контент -->
+        <div class="admin-content">
+            <div class="admin-topbar">
+                <h1 class="page-title">{% block page_title %}Дашборд{% endblock %}</h1>
+                
+                <div class="user-info">
+                    <span>{{ user.username }}</span>
+                    <div class="user-avatar">
+                        {{ user.username|first|upper }}
+                    </div>
                 </div>
             </div>
+            
+            <!-- Сообщения -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block content %}{% endblock %}
         </div>
         
-        <!-- Сообщения -->
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} me-2"></i>
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-        
-        {% block content %}{% endblock %}
-    </div>
+    {% else %}
+        <!-- Сообщение о недостатке прав -->
+        <div class="container mt-5">
+            <div class="access-denied">
+                <i class="fas fa-lock fa-4x mb-3"></i>
+                <h2>Доступ запрещен</h2>
+                <p>У вас нет прав доступа к панели администратора.</p>
+                <p>Эта панель доступна только администраторам.</p>
+                <a href="{% url 'home' %}" class="btn btn-light mt-3">
+                    <i class="fas fa-home me-2"></i>Вернуться на главную
+                </a>
+            </div>
+        </div>
+    {% endif %}
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -1,0 +1,16 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block after_field_sets %}
+{% if original and original.questions.count > 0 %}
+<div class="module">
+    <h2>Вопросы теста ({{ original.questions.count }})</h2>
+    <div style="padding: 10px; background: #f8f9fa; border-radius: 5px;">
+        <a href="{% url 'admin:courses_leveltestquestion_changelist' %}?test__id__exact={{ original.id }}" 
+           class="button" style="margin-bottom: 10px;">
+            Управлять вопросами
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -43,7 +43,18 @@
             </div>
         </div>
     </div>
-
+    <div class="alert alert-info mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-graduation-cap fa-2x me-3"></i>
+                <strong>Хотите начать с подходящего уровня?</strong>
+                Пройдите вступительный тест, и мы определим ваш текущий уровень!
+            </div>
+            <a href="{% url 'level_test_start' language.id %}" class="btn btn-light">
+                <i class="fas fa-play me-2"></i>Пройти тест
+            </a>
+        </div>
+    </div>
     <!-- Выбор уровня -->
     <div class="row mb-4">
         <div class="col-12">

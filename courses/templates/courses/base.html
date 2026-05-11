@@ -35,31 +35,60 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
-                            <i class="fas fa-home"></i> Главная
-                        </a>
-                    </li>
-                    
-                    <!-- ЭТИ КНОПКИ ВИДНЫ ВСЕМ АВТОРИЗОВАННЫМ ПОЛЬЗОВАТЕЛЯМ -->
                     {% if user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'language_list' %}">
-                                <i class="fas fa-globe"></i> Языки
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dictionary' %}">
-                                <i class="fas fa-book"></i> Словарь
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'dashboard' %}">
-                                <i class="fas fa-chart-bar"></i> Статистика
-                            </a>
-                        </li>
+                        {% with profile=user.userprofile %}
+                            {% if profile.is_moderator %}
+                                <!-- Модератор: показывает чаты и панель модератора -->
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'moderator_dashboard' %}">
+                                        <i class="fas fa-chalkboard-teacher"></i> Панель модератора
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'chat_list' %}">
+                                        <i class="fas fa-comments"></i> Чаты
+                                        <span id="nav-unread-badge" class="badge bg-danger ms-1" style="display: none; font-size: 0.7rem;">0</span>
+                                    </a>
+                                </li>
+                            {% elif profile.is_admin %}
+                                <!-- Администратор: показывает админ-панель -->
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'admin_dashboard' %}">
+                                        <i class="fas fa-cog"></i> Админ-панель
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'chat_list' %}">
+                                        <i class="fas fa-comments"></i> Чаты
+                                        <span id="nav-unread-badge" class="badge bg-danger ms-1" style="display: none; font-size: 0.7rem;">0</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <!-- Студент: показывает языки и словарь -->
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'language_list' %}">
+                                        <i class="fas fa-globe"></i> Языки
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'dictionary' %}">
+                                        <i class="fas fa-book"></i> Словарь
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'dashboard' %}">
+                                        <i class="fas fa-chart-bar"></i> Статистика
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'chat_list' %}">
+                                        <i class="fas fa-comments"></i> Чаты
+                                        <span id="nav-unread-badge" class="badge bg-danger ms-1" style="display: none; font-size: 0.7rem;">0</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endwith %}
                     {% else %}
-                        <!-- Для неавторизованных - только языки -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'language_list' %}">
                                 <i class="fas fa-globe"></i> Языки
@@ -69,7 +98,7 @@
                 </ul>
                 
                 <ul class="navbar-nav">
-                    <!-- Кнопка смены темы (для всех) -->
+                    <!-- Кнопка смены темы -->
                     <li class="nav-item me-2">
                         <button class="theme-toggle" id="theme-toggle" title="Переключить тему">
                             <i class="fas fa-moon"></i>
@@ -77,28 +106,21 @@
                     </li>
                     
                     {% if user.is_authenticated %}
-                        <!-- СПЕЦИАЛЬНАЯ КНОПКА ДЛЯ АДМИНА (видна только администраторам) -->
-                        {% if user.is_staff %}
-                        <li class="nav-item me-2">
-                            <a class="nav-link btn btn-warning text-dark" href="{% url 'admin_dashboard' %}" style="border-radius: 8px; padding: 0.5rem 1rem; background: linear-gradient(135deg, #ff9e00, #f72585); color: white !important;">
-                                <i class="fas fa-cog"></i> Админ-панель
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        <!-- Профиль пользователя (для всех авторизованных) -->
                         <li class="nav-item dropdown">
+                            <!-- ЗАМЕНИТЕ ЭТОТ ВЕСЬ БЛОК с аватаром -->
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <div class="avatar-sm me-2">
-                                    {{ user.username|first|upper }}
-                                </div>
-                                <span>{{ user.username }}</span>
-                                {% if user.userprofile.xp %}
-                                <span class="badge bg-light text-primary ms-2">
-                                    <i class="fas fa-star"></i> Ур. {{ user.userprofile.level }}
-                                </span>
+                                {% if user.userprofile.avatar %}
+                                    <img src="{{ user.userprofile.avatar.url }}" alt="{{ user.username }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px;">
+                                {% elif user.userprofile.avatar_url %}
+                                    <img src="{{ user.userprofile.avatar_url }}" alt="{{ user.username }}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px;">
+                                {% else %}
+                                    <div class="avatar-sm me-2">
+                                        {{ user.username|first|upper }}
+                                    </div>
                                 {% endif %}
+                                <span>{{ user.username }}</span>
                             </a>
+                            <!-- Конец замены -->
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>
                                     <a class="dropdown-item" href="{% url 'profile' %}">
@@ -110,22 +132,6 @@
                                         <i class="fas fa-key me-2"></i> Сменить пароль
                                     </a>
                                 </li>
-                                
-                                <!-- Дополнительная ссылка на админку в дропдауне (тоже только для админа) -->
-                                {% if user.is_staff %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item text-warning" href="{% url 'admin_dashboard' %}">
-                                        <i class="fas fa-cog me-2"></i> Админ-панель
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item text-info" href="{% url 'admin:index' %}" target="_blank">
-                                        <i class="fas fa-database me-2"></i> Django Admin
-                                    </a>
-                                </li>
-                                {% endif %}
-                                
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post" action="{% url 'logout' %}" id="logout-form" style="display: none;">
@@ -138,7 +144,6 @@
                             </ul>
                         </li>
                     {% else %}
-                        <!-- Кнопки для неавторизованных -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'login' %}">
                                 <i class="fas fa-sign-in-alt"></i> Войти
@@ -197,13 +202,19 @@
                     <h5 class="mb-3">Навигация</h5>
                     <ul class="list-unstyled">
                         <li class="mb-2"><a href="{% url 'home' %}" class="text-muted text-decoration-none">Главная</a></li>
-                        <li class="mb-2"><a href="{% url 'language_list' %}" class="text-muted text-decoration-none">Языки</a></li>
                         {% if user.is_authenticated %}
-                        <li class="mb-2"><a href="{% url 'profile' %}" class="text-muted text-decoration-none">Профиль</a></li>
-                        {% endif %}
-                        <!-- Ссылка на админку в футере (только для админа) -->
-                        {% if user.is_staff %}
-                        <li class="mb-2"><a href="{% url 'admin_dashboard' %}" class="text-muted text-decoration-none">Админ-панель</a></li>
+                            {% with profile=user.userprofile %}
+                                {% if profile.is_moderator %}
+                                    <li class="mb-2"><a href="{% url 'moderator_dashboard' %}" class="text-muted text-decoration-none">Панель модератора</a></li>
+                                {% elif profile.is_admin %}
+                                    <li class="mb-2"><a href="{% url 'admin_dashboard' %}" class="text-muted text-decoration-none">Админ-панель</a></li>
+                                {% else %}
+                                    <li class="mb-2"><a href="{% url 'language_list' %}" class="text-muted text-decoration-none">Языки</a></li>
+                                    <li class="mb-2"><a href="{% url 'dashboard' %}" class="text-muted text-decoration-none">Статистика</a></li>
+                                {% endif %}
+                                <li class="mb-2"><a href="{% url 'profile' %}" class="text-muted text-decoration-none">Профиль</a></li>
+                                <li class="mb-2"><a href="{% url 'chat_list' %}" class="text-muted text-decoration-none">Чаты</a></li>
+                            {% endwith %}
                         {% endif %}
                     </ul>
                 </div>
@@ -220,7 +231,7 @@
                     <ul class="list-unstyled">
                         <li class="mb-2"><i class="fas fa-graduation-cap me-2"></i>Курсовой проект</li>
                         <li class="mb-2"><i class="fas fa-code me-2"></i>Разработка на Django</li>
-                        <li class="mb-2"><i class="far fa-copyright me-2"></i>© 2026 LangLearn</li>
+                        <li class="mb-2"><i class="far fa-copyright me-2"></i>© 2024 LangLearn</li>
                     </ul>
                 </div>
             </div>
@@ -235,6 +246,35 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Theme Toggle -->
     <script src="{% static 'courses/theme.js' %}"></script>
+    
+    <script>
+        // Функция для обновления счетчика непрочитанных сообщений в навигации
+        function updateUnreadBadge() {
+            if ({% if user.is_authenticated %}true{% else %}false{% endif %}) {
+                fetch('{% url "chat_unread_count_ajax" %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const badge = document.getElementById('nav-unread-badge');
+                        if (badge) {
+                            if (data.unread_count > 0) {
+                                badge.textContent = data.unread_count;
+                                badge.style.display = 'inline-block';
+                            } else {
+                                badge.style.display = 'none';
+                            }
+                        }
+                    }
+                })
+                .catch(error => console.log('Error fetching unread count:', error));
+            }
+        }
+        
+        // Обновляем каждые 30 секунд
+        setInterval(updateUnreadBadge, 30000);
+        // И при загрузке страницы
+        document.addEventListener('DOMContentLoaded', updateUnreadBadge);
+    </script>
     
     {% block extra_js %}{% endblock %}
 </body>

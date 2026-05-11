@@ -1,0 +1,282 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Чат с {{ other_user.username }} | LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.chat-header a {
+    color: white;
+    font-size: 1.2rem;
+}
+
+.chat-header-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.chat-header-info {
+    flex-grow: 1;
+}
+
+.chat-header-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.chat-header-status {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.messages-container {
+    height: 500px;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--bg-color);
+}
+
+.message {
+    margin-bottom: 20px;
+    display: flex;
+}
+
+.message-mine {
+    justify-content: flex-end;
+}
+
+.message-other {
+    justify-content: flex-start;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.message-mine .message-bubble {
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    color: white;
+}
+
+.message-other .message-bubble {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.message-time {
+    font-size: 0.7rem;
+    margin-top: 5px;
+    opacity: 0.7;
+}
+
+.message-status {
+    font-size: 0.7rem;
+    margin-left: 5px;
+}
+
+.chat-input-area {
+    padding: 20px;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+}
+
+.chat-input {
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input textarea {
+    flex-grow: 1;
+    resize: none;
+    border-radius: 20px;
+    padding: 12px 18px;
+}
+
+.send-btn {
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message {
+    animation: fadeIn 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <a href="{% url 'chat_list' %}">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div class="chat-header-avatar">
+            {% if other_user.userprofile.avatar %}
+                <img src="{{ other_user.userprofile.avatar.url }}" alt="{{ other_user.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+            {% elif other_user.userprofile.avatar_url %}
+                <img src="{{ other_user.userprofile.avatar_url }}" alt="{{ other_user.username }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+            {% else %}
+                {{ other_user.username|first|upper }}
+            {% endif %}
+        </div>
+        <div class="chat-header-info">
+            <div class="chat-header-name">{{ other_user.username }}</div>
+            <div class="chat-header-status">
+                {% if profile.is_moderator %}
+                    Student
+                {% else %}
+                    Moderator
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="messages-container" id="messages-container">
+        {% for msg in messages %}
+        <div class="message {% if msg.sender == request.user %}message-mine{% else %}message-other{% endif %}">
+            <div class="message-bubble">
+                {{ msg.message|linebreaksbr }}
+                <div class="message-time">
+                    {{ msg.created_at|date:"H:i" }}
+                    {% if msg.sender == request.user and msg.is_read %}
+                        <i class="fas fa-check-double message-status" title="Прочитано"></i>
+                    {% elif msg.sender == request.user %}
+                        <i class="fas fa-check message-status" title="Отправлено"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="chat-input-area">
+        <div class="chat-input">
+            <textarea id="message-input" class="form-control" rows="2" 
+                      placeholder="Введите сообщение..."></textarea>
+            <button id="send-btn" class="btn btn-primary send-btn">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let lastMessageId = {{ messages.last.id|default:0 }};
+const messagesContainer = document.getElementById('messages-container');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+
+function scrollToBottom() {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+scrollToBottom();
+
+function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    fetch('{% url "chat_send_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            room_id: {{ room.id }},
+            message: message
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            fetchNewMessages();
+        }
+    });
+}
+
+function appendMessage(msg, isMine) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isMine ? 'message-mine' : 'message-other'}`;
+    messageDiv.innerHTML = `
+        <div class="message-bubble">
+            ${msg.text.replace(/\n/g, '<br>')}
+            <div class="message-time">
+                ${msg.created_at}
+                ${isMine ? '<i class="fas fa-check message-status"></i>' : ''}
+            </div>
+        </div>
+    `;
+    messagesContainer.appendChild(messageDiv);
+    scrollToBottom();
+}
+
+function fetchNewMessages() {
+    fetch(`{% url "chat_get_messages_ajax" room.id %}?last_id=${lastMessageId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.messages.length) {
+            data.messages.forEach(msg => {
+                appendMessage(msg, msg.is_mine);
+                if (msg.id > lastMessageId) {
+                    lastMessageId = msg.id;
+                }
+            });
+        }
+    });
+}
+
+messageInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+});
+
+setInterval(fetchNewMessages, 3000);
+</script>
+{% endblock %}

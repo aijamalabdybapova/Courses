@@ -10,7 +10,8 @@ from django.db import models
 
 from .models import (
     Language, Course, Lesson, Word, Test, Question, Answer,
-    User, UserProfile, Progress, TestResult, UserWord
+    User, UserProfile, Progress, TestResult, UserWord,
+    ModeratorStudent, ModeratorNote  # Добавьте ModeratorNote если нужно
 )
 from .forms import (
     LanguageForm, CourseForm, LessonForm, WordForm,
@@ -19,10 +20,10 @@ from .forms import (
 
 # Декоратор для проверки прав администратора
 def admin_required(view_func):
-    """Декоратор для проверки, что пользователь является администратором"""
+    """Декоратор для проверки, что пользователь является администратором (не модератором)"""
     decorated_view_func = user_passes_test(
-        lambda u: u.is_authenticated and u.is_staff,
-        login_url='login',
+        lambda u: u.is_authenticated and (hasattr(u, 'userprofile') and u.userprofile.is_admin) or u.is_superuser,
+        login_url='home',
         redirect_field_name='next'
     )(view_func)
     return decorated_view_func
@@ -101,6 +102,8 @@ def admin_dashboard(request):
         'popular_courses': popular_courses,
         'activity_chart_data': activity_chart_data,
     }
+    context['moderators'] = User.objects.filter(userprofile__role='moderator')
+    context['students'] = User.objects.filter(userprofile__role='student')
     return render(request, 'courses/admin/dashboard.html', context)
 
 
@@ -810,6 +813,106 @@ def admin_user_toggle_active(request, user_id):
     
     return redirect('admin_users')
 
+def admin_user_bulk_action(request):
+    """Массовые действия с пользователями"""
+    if request.method != 'POST':
+        return redirect('admin_users')
+    
+    action = request.POST.get('action')
+    user_ids = request.POST.getlist('user_ids')
+    
+    if not user_ids:
+        messages.error(request, 'Не выбраны пользователи')
+        return redirect('admin_users')
+    
+    users = User.objects.filter(id__in=user_ids)
+    count = users.count()
+    
+    if action == 'activate':
+        users.update(is_active=True)
+        messages.success(request, f'Активировано {count} пользователей')
+        
+    elif action == 'deactivate':
+        users.update(is_active=False)
+        messages.success(request, f'Деактивировано {count} пользователей')
+        
+    elif action == 'make_student':
+        for user in users:
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.role = 'student'
+            profile.save()
+            # Убираем права staff у студентов (кроме суперпользователей)
+            if user.is_staff and not user.is_superuser:
+                user.is_staff = False
+                user.save()
+        messages.success(request, f'{count} пользователей назначены студентами')
+        
+    elif action == 'make_moderator':
+        for user in users:
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.role = 'moderator'
+            profile.save()
+            # НЕ ДАЕМ права staff модераторам
+            if user.is_staff and not user.is_superuser:
+                user.is_staff = False
+                user.save()
+        messages.success(request, f'{count} пользователей назначены модераторами')
+        
+    elif action == 'make_admin':
+        for user in users:
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.role = 'admin'
+            profile.save()
+            # Только админы получают права staff
+            if not user.is_staff:
+                user.is_staff = True
+            user.is_superuser = True
+            user.save()
+        messages.success(request, f'{count} пользователей назначены администраторами')
+        
+    elif action == 'reset_progress':
+        for user in users:
+            Progress.objects.filter(user=user).update(completed=False, completed_at=None)
+            UserWord.objects.filter(user=user).update(learned=False, learned_at=None)
+            try:
+                profile = user.userprofile
+                profile.xp = 0
+                profile.level = 1
+                profile.streak_days = 0
+                profile.save()
+            except UserProfile.DoesNotExist:
+                pass
+        messages.success(request, f'Прогресс сброшен для {count} пользователей')
+        
+    elif action == 'delete':
+        # Не удаляем суперпользователей
+        for user in users:
+            if not user.is_superuser:
+                user.delete()
+        messages.success(request, f'Удалено {count} пользователей')
+    
+    return redirect('admin_users')
+
+
+def admin_user_reset_progress(request, user_id):
+    """Сброс прогресса отдельного пользователя"""
+    user = get_object_or_404(User, id=user_id)
+    
+    Progress.objects.filter(user=user).update(completed=False, completed_at=None)
+    UserWord.objects.filter(user=user).update(learned=False, learned_at=None)
+    
+    try:
+        profile = user.userprofile
+        profile.xp = 0
+        profile.level = 1
+        profile.streak_days = 0
+        profile.save()
+        messages.success(request, f'Прогресс пользователя {user.username} сброшен')
+    except UserProfile.DoesNotExist:
+        messages.warning(request, f'Профиль пользователя {user.username} не найден')
+    
+    return redirect('admin_users')
+
 
 # ========== СТАТИСТИКА ==========
 @admin_required
@@ -951,3 +1054,118 @@ def admin_audit_log(request):
         'total_users': User.objects.count(),
     }
     return render(request, 'courses/admin/audit_log.html', context)
+# ========== УПРАВЛЕНИЕ СТУДЕНТАМИ МОДЕРАТОРА ==========
+
+@admin_required
+def admin_moderator_students(request, moderator_id):
+    """Страница управления студентами модератора"""
+    moderator = get_object_or_404(User, id=moderator_id)
+    
+    # Проверяем, что пользователь действительно модератор
+    try:
+        if not moderator.userprofile.is_moderator:
+            messages.error(request, f'Пользователь {moderator.username} не является модератором')
+            return redirect('admin_users')
+    except:
+        messages.error(request, 'Профиль пользователя не найден')
+        return redirect('admin_users')
+    
+    # Получаем всех студентов модератора
+    students = ModeratorStudent.objects.filter(moderator=moderator).select_related('student')
+    
+    # Получаем всех студентов, которые еще не назначены этому модератору
+    existing_student_ids = students.values_list('student_id', flat=True)
+    available_students = User.objects.filter(
+        userprofile__role='student',
+        is_active=True
+    ).exclude(id__in=existing_student_ids)
+    
+    # Поиск по студентам
+    search_query = request.GET.get('search', '')
+    if search_query:
+        available_students = available_students.filter(
+            Q(username__icontains=search_query) | 
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        )
+    
+    # Пагинация
+    paginator = Paginator(available_students, 20)
+    page_number = request.GET.get('page')
+    available_students_page = paginator.get_page(page_number)
+    
+    context = {
+        'moderator': moderator,
+        'students': students,
+        'available_students': available_students_page,
+        'search_query': search_query,
+        'total_languages': Language.objects.count(),
+        'total_courses': Course.objects.count(),
+        'total_lessons': Lesson.objects.count(),
+        'total_words': Word.objects.count(),
+        'total_tests': Test.objects.count(),
+        'total_users': User.objects.count(),
+    }
+    return render(request, 'courses/admin/users/moderator_students.html', context)
+
+
+@admin_required
+def admin_moderator_add_student(request, moderator_id):
+    """Добавление студента к модератору"""
+    moderator = get_object_or_404(User, id=moderator_id)
+    
+    # Проверяем, что пользователь действительно модератор
+    try:
+        if not moderator.userprofile.is_moderator:
+            messages.error(request, f'Пользователь {moderator.username} не является модератором')
+            return redirect('admin_users')
+    except:
+        messages.error(request, 'Профиль пользователя не найден')
+        return redirect('admin_users')
+    
+    if request.method == 'POST':
+        student_id = request.POST.get('student_id')
+        notes = request.POST.get('notes', '')
+        
+        if student_id:
+            try:
+                student = User.objects.get(id=student_id)
+                
+                # Проверяем, не назначен ли уже этот студент
+                relation, created = ModeratorStudent.objects.get_or_create(
+                    moderator=moderator,
+                    student=student,
+                    defaults={'notes': notes}
+                )
+                
+                if not created and notes:
+                    relation.notes = notes
+                    relation.save()
+                    messages.info(request, f'Заметки обновлены для студента {student.username}')
+                elif created:
+                    messages.success(request, f'Студент {student.username} добавлен к модератору {moderator.username}')
+                else:
+                    messages.warning(request, f'Студент {student.username} уже назначен этому модератору')
+                    
+            except User.DoesNotExist:
+                messages.error(request, 'Студент не найден')
+        else:
+            messages.error(request, 'Выберите студента')
+    
+    return redirect('admin_moderator_students', moderator_id=moderator.id)
+
+
+@admin_required
+def admin_moderator_remove_student(request, relation_id):
+    """Удаление студента от модератора"""
+    relation = get_object_or_404(ModeratorStudent, id=relation_id)
+    moderator_id = relation.moderator.id
+    student_name = relation.student.username
+    moderator_name = relation.moderator.username
+    
+    if request.method == 'POST':
+        relation.delete()
+        messages.success(request, f'Студент {student_name} удален от модератора {moderator_name}')
+    
+    return redirect('admin_moderator_students', moderator_id=moderator_id)

@@ -4,6 +4,54 @@
 {% block title %}Управление пользователями | LangLearn Admin{% endblock %}
 {% block page_title %}Управление пользователями{% endblock %}
 
+{% block extra_css %}
+<style>
+.filters {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.admin-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.btn-group {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.btn-group form {
+    display: inline-block;
+}
+
+.bulk-actions-bar {
+    background: rgba(67, 97, 238, 0.05);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selected-count {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.bulk-action-select {
+    width: auto;
+    min-width: 200px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <!-- Фильтры и поиск -->
 <div class="filters">
@@ -16,7 +64,8 @@
             <label class="form-label">Роль</label>
             <select name="role" class="form-control">
                 <option value="">Все роли</option>
-                <option value="user" {% if role == 'user' %}selected{% endif %}>Пользователи</option>
+                <option value="student" {% if role == 'student' %}selected{% endif %}>Студенты</option>
+                <option value="moderator" {% if role == 'moderator' %}selected{% endif %}>Модераторы</option>
                 <option value="admin" {% if role == 'admin' %}selected{% endif %}>Администраторы</option>
             </select>
         </div>
@@ -30,79 +79,157 @@
 </div>
 
 <div class="admin-card">
-    <div class="admin-card-header">
+    <div class="admin-card-header d-flex justify-content-between align-items-center">
         <h5 class="admin-card-title">Список пользователей ({{ users.paginator.count }})</h5>
+        
+        <div class="d-flex gap-2">
+            <select id="bulk-action" class="form-control bulk-action-select">
+                <option value="">Массовые действия...</option>
+                <option value="activate">Активировать</option>
+                <option value="deactivate">Деактивировать (заблокировать)</option>
+                <option value="make_student">Назначить студентами</option>
+                <option value="make_moderator">Назначить модераторами</option>
+                <option value="make_admin">Назначить администраторами</option>
+                <option value="reset_progress">Сбросить прогресс</option>
+                <option value="delete">Удалить пользователей</option>
+            </select>
+            <button type="button" id="apply-bulk-action" class="btn btn-primary">
+                <i class="fas fa-check me-1"></i>Применить
+            </button>
+        </div>
     </div>
     
-    <table class="admin-table">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Пользователь</th>
-                <th>Email</th>
-                <th>Имя</th>
-                <th>Дата регистрации</th>
-                <th>Уровень</th>
-                <th>Роль</th>
-                <th>Статус</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td><strong>{{ user.username }}</strong></td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.first_name }} {{ user.last_name }}</td>
-                <td>{{ user.date_joined|date:"d.m.Y" }}</td>
-                <td>
-                    {% with profile=user.userprofile %}
-                    {% if profile %}
-                    <span class="badge" style="background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white;">
-                        Ур. {{ profile.level }} ({{ profile.xp }} XP)
-                    </span>
-                    {% else %}
-                    -
-                    {% endif %}
-                    {% endwith %}
-                </td>
-                <td>
-                    {% if user.is_staff %}
-                    <span class="badge bg-primary">ADMIN</span>
-                    {% else %}
-                    <span class="badge bg-secondary">USER</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if user.is_active %}
-                    <span class="badge bg-success">Активен</span>
-                    {% else %}
-                    <span class="badge bg-danger">Заблокирован</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <form method="post" action="{% url 'admin_user_toggle_active' user.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        {% if user.is_active %}
-                        <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Заблокировать пользователя {{ user.username }}?')">
-                            <i class="fas fa-ban"></i>
-                        </button>
-                        {% else %}
-                        <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Разблокировать пользователя {{ user.username }}?')">
-                            <i class="fas fa-check-circle"></i>
-                        </button>
-                        {% endif %}
-                    </form>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="9" class="text-center text-muted">Пользователи не найдены</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <form id="bulk-action-form" method="post" action="{% url 'admin_user_bulk_action' %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" id="selected-action" value="">
+        
+        <div class="table-responsive">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th width="40">
+                            <input type="checkbox" id="select-all">
+                        </th>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Email</th>
+                        <th>Имя</th>
+                        <th>Дата регистрации</th>
+                        <th>Уровень</th>
+                        <th>Роль</th>
+                        <th>Статус</th>
+                        <th width="160">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="user_ids" value="{{ user.id }}" class="user-checkbox">
+                        </td>
+                        <td>{{ user.id }}</td>
+                        <td><strong>{{ user.username }}</strong></td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                        <td>{{ user.date_joined|date:"d.m.Y" }}</td>
+                        <td>
+                            {% with profile=user.userprofile %}
+                            {% if profile %}
+                            <span class="badge" style="background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white;">
+                                Ур. {{ profile.level }} ({{ profile.xp }} XP)
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
+                            {% if user.is_superuser %}
+                            <span class="badge bg-danger">ADMIN</span>
+                            {% elif user.userprofile.role == 'moderator' %}
+                            <span class="badge bg-warning">MODERATOR</span>
+                            {% elif user.userprofile.role == 'student' %}
+                            <span class="badge bg-secondary">STUDENT</span>
+                            {% else %}
+                            <span class="badge bg-secondary">USER</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge bg-success">Активен</span>
+                            {% else %}
+                            <span class="badge bg-danger">Заблокирован</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <!-- Кнопка блокировки/разблокировки -->
+                                <form method="post" action="{% url 'admin_user_toggle_active' user.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    {% if user.is_active %}
+                                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Заблокировать пользователя {{ user.username }}?')" title="Заблокировать">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Разблокировать пользователя {{ user.username }}?')" title="Разблокировать">
+                                        <i class="fas fa-check-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </form>
+                                
+                                <!-- Кнопка сброса прогресса -->
+                                {% if not user.is_superuser %}
+                                <form method="post" action="{% url 'admin_user_reset_progress' user.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-info" onclick="return confirm('Сбросить прогресс пользователя {{ user.username }}?')" title="Сбросить прогресс">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                
+
+                                <!-- ========== КНОПКИ ЧАТА ========== -->
+                                <!-- Для модераторов - кнопка чата с админом -->
+                                {% if user.userprofile.role == 'moderator' %}
+                                <a href="{% url 'chat_create' %}?user_id={{ user.id }}&type=moderator" 
+                                    class="btn btn-sm btn-primary" 
+                                    title="Написать модератору">
+                                    <i class="fas fa-comment"></i>
+                                </a>
+                                {% endif %}
+                                
+                                <!-- Для студентов - кнопка чата -->
+                                {% if user.userprofile.role == 'student' %}
+                                    <a href="{% url 'chat_create' %}?user_id={{ user.id }}&type=student" 
+                                    class="btn btn-sm btn-primary" 
+                                    title="Написать студенту">
+                                    <i class="fas fa-comment"></i>
+                                </a>
+                                {% endif %}
+                                
+                                <!-- Для модераторов - управление студентами (оставляем) -->
+                                {% if user.userprofile.role == 'moderator' %}
+                                    <a href="{% url 'admin_moderator_students' user.id %}" 
+                                    class="btn btn-sm btn-secondary" 
+                                    title="Управление студентами">
+                                    <i class="fas fa-users"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center text-muted py-5">
+                            <i class="fas fa-users fa-3x mb-3 d-block"></i>
+                            Пользователи не найдены
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
     
     <!-- Пагинация -->
     {% if users.has_other_pages %}
@@ -137,4 +264,69 @@
     </nav>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        });
+    }
+    
+    const applyBtn = document.getElementById('apply-bulk-action');
+    const actionSelect = document.getElementById('bulk-action');
+    const bulkForm = document.getElementById('bulk-action-form');
+    const selectedActionInput = document.getElementById('selected-action');
+    
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function() {
+            const selectedUsers = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            
+            if (selectedUsers.length === 0) {
+                alert('Пожалуйста, выберите хотя бы одного пользователя');
+                return;
+            }
+            
+            const action = actionSelect.value;
+            if (!action) {
+                alert('Пожалуйста, выберите действие');
+                return;
+            }
+            
+            let confirmMessage = '';
+            switch(action) {
+                case 'activate':
+                    confirmMessage = `Активировать выбранных пользователей (${selectedUsers.length})?`;
+                    break;
+                case 'deactivate':
+                    confirmMessage = `Заблокировать выбранных пользователей (${selectedUsers.length})?`;
+                    break;
+                case 'make_student':
+                    confirmMessage = `Назначить выбранных пользователей студентами (${selectedUsers.length})?`;
+                    break;
+                case 'make_moderator':
+                    confirmMessage = `Назначить выбранных пользователей модераторами (${selectedUsers.length})?`;
+                    break;
+                case 'make_admin':
+                    confirmMessage = `Назначить выбранных пользователей администраторами (${selectedUsers.length})?`;
+                    break;
+                case 'reset_progress':
+                    confirmMessage = `Сбросить прогресс выбранных пользователей (${selectedUsers.length})?`;
+                    break;
+                case 'delete':
+                    confirmMessage = `Удалить выбранных пользователей (${selectedUsers.length})? Это действие необратимо!`;
+                    break;
+            }
+            
+            if (confirm(confirmMessage)) {
+                selectedActionInput.value = action;
+                bulkForm.submit();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

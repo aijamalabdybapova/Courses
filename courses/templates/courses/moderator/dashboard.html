@@ -1,0 +1,421 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Панель модератора | LangLearn{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px var(--shadow-color);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.student-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+.student-card:hover {
+    transform: translateX(5px);
+    border-left-color: var(--primary-color);
+    border-left-width: 4px;
+}
+
+.student-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.student-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.student-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.progress-bar-custom {
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.note-preview {
+    background: rgba(67, 97, 238, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-left: 3px solid var(--primary-color);
+}
+
+.top-student-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin: 0 auto 0.5rem;
+    overflow: hidden;
+}
+
+.top-student-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.top-student-avatar .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #4361ee, #3a0ca3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card" style="background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="display-6 mb-2">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>Панель модератора
+                            </h1>
+                            <p class="mb-0">Добро пожаловать, {{ request.user.username }}!</p>
+                        </div>
+                        <div class="text-end">
+                            <div class="display-6 mb-0">{{ total_students }}</div>
+                            <small>учеников</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number">{{ total_students }}</div>
+                <div class="stat-label">Всего учеников</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-sticky-note"></i>
+                </div>
+                <div class="stat-number">{{ total_notes }}</div>
+                <div class="stat-label">Заметок</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-week"></i>
+                </div>
+                <div class="stat-number">{{ weekly_activity }}</div>
+                <div class="stat-label">Активность за неделю</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="stat-number">{{ top_students|length }}</div>
+                <div class="stat-label">В топе</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Чат с администратором -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="fas fa-headset me-2"></i>Поддержка
+                            </h5>
+                            <p class="text-muted mb-0 small">Свяжитесь с администратором платформы</p>
+                        </div>
+                        <a href="{% url 'chat_admin' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-comment-dots me-2"></i>Чат с администратором
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Топ учеников -->
+    {% if top_students %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-crown me-2"></i>Топ учеников по XP
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for student in top_students %}
+                        <div class="col-md-2 col-6 mb-3 text-center">
+                            <div class="top-student-avatar">
+                                {% if student.student.userprofile.avatar %}
+                                    <img src="{{ student.student.userprofile.avatar.url }}" alt="{{ student.student.username }}">
+                                {% elif student.student.userprofile.avatar_url %}
+                                    <img src="{{ student.student.userprofile.avatar_url }}" alt="{{ student.student.username }}">
+                                {% else %}
+                                    <div class="avatar-placeholder">
+                                        {{ student.student.username|first|upper }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="fw-bold">{{ student.student.username }}</div>
+                            <div class="small text-muted">{{ student.total_xp }} XP</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Список учеников -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-graduate me-2"></i>Мои ученики
+                    </h5>
+                    {% if request.user.is_superuser %}
+                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#assignStudentModal">
+                        <i class="fas fa-plus me-1"></i>Назначить ученика
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if students_data %}
+                        {% for student in students_data %}
+                        <div class="student-card">
+                            <div class="row align-items-center">
+                                <div class="col-md-2 col-3 text-center">
+                                    <div class="student-avatar mx-auto">
+                                        {% if student.student.userprofile.avatar %}
+                                            <img src="{{ student.student.userprofile.avatar.url }}" alt="{{ student.student.username }}">
+                                        {% elif student.student.userprofile.avatar_url %}
+                                            <img src="{{ student.student.userprofile.avatar_url }}" alt="{{ student.student.username }}">
+                                        {% else %}
+                                            <div class="avatar-placeholder">
+                                                {{ student.student.username|first|upper }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-9">
+                                    <h6 class="mb-1">{{ student.student.username }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-envelope me-1"></i>{{ student.student.email }}
+                                    </small>
+                                    <div class="mt-2">
+                                        <span class="badge bg-primary">{{ student.total_xp }} XP</span>
+                                        <span class="badge bg-success">Ур. {{ student.profile.level }}</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <div class="d-flex justify-content-between small">
+                                            <span>Прогресс</span>
+                                            <span>{{ student.total_lessons }} уроков</span>
+                                        </div>
+                                        <div class="progress-bar-custom">
+                                            <div class="progress-fill" style="width: {% widthratio student.total_lessons 50 100 %}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="small text-muted">
+                                        <i class="fas fa-book me-1"></i>{{ student.total_words }} слов
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    {% if student.last_activity %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ student.last_activity|date:"d.m.Y" }}
+                                    </small>
+                                    {% else %}
+                                    <small class="text-muted">Нет активности</small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <div class="btn-group">
+                                        <a href="{% url 'moderator_student_detail' student.student.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'chat_create' %}?user_id={{ student.student.id }}" 
+                                           class="btn btn-sm btn-info" title="Написать сообщение">
+                                            <i class="fas fa-comment"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger" 
+                                                onclick="removeStudent({{ student.relation_id }}, '{{ student.student.username }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if student.notes %}
+                            <div class="mt-3">
+                                <div class="note-preview">
+                                    <i class="fas fa-sticky-note me-1"></i>
+                                    <strong>Последняя заметка:</strong>
+                                    {{ student.notes.first.note|truncatewords:20 }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                            <h5>У вас пока нет учеников</h5>
+                            <p class="text-muted">Дождитесь назначения от администратора</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для назначения ученика -->
+{% if request.user.is_superuser %}
+<div class="modal fade" id="assignStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Назначить ученика модератору</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'moderator_assign_student' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Модератор</label>
+                        <select name="moderator_id" class="form-select" required>
+                            <option value="">Выберите модератора...</option>
+                            {% for mod in moderators %}
+                            <option value="{{ mod.id }}">{{ mod.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ученик</label>
+                        <select name="student_id" class="form-select" required>
+                            <option value="">Выберите ученика...</option>
+                            {% for stud in students %}
+                            <option value="{{ stud.id }}">{{ stud.username }} ({{ stud.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Назначить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function removeStudent(relationId, studentName) {
+    if (confirm(`Вы уверены, что хотите удалить ученика "${studentName}"?`)) {
+        fetch(`/moderator/remove-student/${relationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Ошибка при удалении');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

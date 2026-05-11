@@ -29,5 +29,14 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
 ]
+# Добавьте обработчики ошибок (для кастомных страниц)
+handler404 = 'courses.views.custom_404'
+handler500 = 'courses.views.custom_500'
+
+# Для DEBUG режима добавляем debug toolbar
 if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns = [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ] + urlpatterns
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

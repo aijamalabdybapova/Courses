@@ -12,7 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings
 SECRET_KEY = 'ваш-секретный-ключ'  # Измените на настоящий!
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1','testserver']
 
 
 # Application definition
@@ -121,6 +121,9 @@ STATICFILES_DIRS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
+MAX_UPLOAD_SIZE = 5242880  # 5MB
+
 # Login/Logout redirects
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
@@ -157,3 +160,52 @@ if DEBUG:
     # Принудительно использовать реальную отправку даже в DEBUG
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+# ========== НАСТРОЙКИ ДЛЯ DJANGO DEBUG TOOLBAR ==========
+# Для отладки и оптимизации SQL-запросов
+
+INSTALLED_APPS += ['debug_toolbar']
+
+MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
+# Настройки отображения панели
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: True,  # Показывать всегда
+    'SHOW_COLLAPSED': False,  # Показывать развернутой
+    'SQL_WARNING_THRESHOLD': 100,  # Порог предупреждения для SQL (мс)
+}
+
+
+# ========== НАСТРОЙКИ ДЛЯ КАСТОМНОЙ СТРАНИЦЫ 404 ==========
+# Для инспектирования и обработки ошибок
+
+# В режиме DEBUG=False будут использоваться кастомные шаблоны ошибок
+# Для тестирования 404 временно установите DEBUG = False
+# и добавьте ALLOWED_HOSTS = ['127.0.0.1']
+
+# Кастомные обработчики ошибок (работают при DEBUG=False)
+# В urls.py нужно добавить:
+handler404 = 'courses.views.custom_404'
+handler500 = 'courses.views.custom_500'
+
+
+# ========== БЕЗОПАСНОСТЬ ==========
+# Дополнительные настройки для защиты (для production)
+
+# Безопасные заголовки
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# CSRF настройки
+CSRF_COOKIE_SECURE = False  # True для HTTPS (для разработки False)
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Session настройки
+SESSION_COOKIE_SECURE = False  # True для HTTPS (для разработки False)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 
 from .models import (
     UserProfile, Language, Word, UserWord,
-    Course, Lesson, Test, Question, Answer
+    Course, Lesson, Test, Question, Answer, ChatMessage
 )
 
 
@@ -142,18 +142,24 @@ class ProfileUpdateForm(forms.ModelForm):
     """Форма для обновления профиля пользователя"""
     class Meta:
         model = UserProfile
-        fields = ['bio', 'current_language', 'daily_goal_minutes', 'avatar']
+        fields = ['bio', 'current_language', 'daily_goal_minutes', 'avatar', 'avatar_url']
         widgets = {
-            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'bio': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Расскажите о себе...'}),
             'current_language': forms.Select(attrs={'class': 'form-control'}),
-            'daily_goal_minutes': forms.NumberInput(attrs={'class': 'form-control'}),
+            'daily_goal_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': 5, 'max': 480}),
             'avatar': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'avatar_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://example.com/avatar.jpg'}),
         }
         labels = {
             'bio': 'О себе',
-            'current_language': 'Текущий язык изучения',
-            'daily_goal_minutes': 'Ежедневная цель (минут)',
-            'avatar': 'Аватар',
+            'current_language': 'Изучаемый язык',
+            'daily_goal_minutes': 'Ежедневная цель (минуты)',
+            'avatar': 'Загрузить аватар',
+            'avatar_url': 'Или ссылка на аватар',
+        }
+        help_texts = {
+            'avatar': 'Поддерживаются форматы: JPG, PNG, GIF. Максимальный размер: 5MB',
+            'avatar_url': 'Укажите прямую ссылку на изображение',
         }
 
 
@@ -323,3 +329,35 @@ class UserSettingsForm(forms.Form):
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         label='Получать уведомления на email'
     )
+
+
+# ========== ФОРМА ДЛЯ ЧАТА ==========
+# ========== ФОРМЫ ДЛЯ ТЕСТА УРОВНЯ ==========
+
+class LevelTestForm(forms.Form):
+    """Форма для вступительного теста"""
+    def __init__(self, questions, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for question in questions:
+            self.fields[f'question_{question.id}'] = forms.ChoiceField(
+                choices=[(ans.id, ans.text) for ans in question.answers.all()],
+                widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+                label=question.text,
+                required=True
+            )
+class ChatMessageForm(forms.ModelForm):
+    """Форма для отправки сообщения в чате"""
+    class Meta:
+        model = ChatMessage
+        fields = ['message']
+        widgets = {
+            'message': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Введите сообщение...',
+                'style': 'resize: none;'
+            })
+        }
+        labels = {
+            'message': ''
+        }

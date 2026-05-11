@@ -1,0 +1,185 @@
+{% extends 'courses/base.html' %}
+{% load static %}
+
+{% block title %}Тест уровня | {{ language.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.question-card {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+.question-number {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    color: white;
+    text-align: center;
+    line-height: 30px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.question-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.answer-option {
+    margin: 0.5rem 0;
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.answer-option:hover {
+    border-color: var(--primary-color);
+    background: rgba(67, 97, 238, 0.05);
+}
+
+.answer-option input {
+    margin-right: 10px;
+}
+
+.progress-bar-container {
+    height: 8px;
+    background: var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gradient-primary);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4>Тест уровня {{ language.name }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="progress-bar-container">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            
+            <form method="post" action="{% url 'level_test_submit' language.id %}" id="test-form">
+                {% csrf_token %}
+                
+                {% for question in questions %}
+                <div class="question-card" id="question-{{ forloop.counter }}" 
+                     style="display: {% if forloop.first %}block{% else %}none{% endif %};">
+                    <div class="question-number">{{ forloop.counter }}</div>
+                    <div class="question-text">{{ question.text }}</div>
+                    
+                    <div class="question-answers">
+                        {% for answer in question.answers.all %}
+                        <div class="answer-option">
+                            <input type="radio" 
+                                   name="question_{{ question.id }}" 
+                                   value="{{ answer.id }}"
+                                   id="q{{ question.id }}_a{{ answer.id }}"
+                                   required>
+                            <label for="q{{ question.id }}_a{{ answer.id }}">{{ answer.text }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-outline-primary" id="prev-btn" disabled>
+                        <i class="fas fa-arrow-left me-2"></i>Назад
+                    </button>
+                    <button type="button" class="btn btn-primary" id="next-btn">
+                        Далее <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                    <button type="submit" class="btn btn-success" id="submit-btn" style="display: none;">
+                        <i class="fas fa-check me-2"></i>Завершить тест
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const questions = document.querySelectorAll('.question-card');
+    const totalQuestions = questions.length;
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const progressFill = document.getElementById('progress-fill');
+    
+    let currentQuestion = 1;
+    
+    function updateProgress() {
+        const progress = (currentQuestion / totalQuestions) * 100;
+        progressFill.style.width = progress + '%';
+    }
+    
+    function updateButtons() {
+        prevBtn.disabled = currentQuestion === 1;
+        
+        if (currentQuestion === totalQuestions) {
+            nextBtn.style.display = 'none';
+            submitBtn.style.display = 'inline-block';
+        } else {
+            nextBtn.style.display = 'inline-block';
+            submitBtn.style.display = 'none';
+        }
+    }
+    
+    function goToQuestion(num) {
+        questions[currentQuestion - 1].style.display = 'none';
+        questions[num - 1].style.display = 'block';
+        currentQuestion = num;
+        updateProgress();
+        updateButtons();
+    }
+    
+    prevBtn.addEventListener('click', () => {
+        if (currentQuestion > 1) {
+            goToQuestion(currentQuestion - 1);
+        }
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        // Проверяем, выбран ли ответ на текущем вопросе
+        const currentAnswers = questions[currentQuestion - 1].querySelectorAll('input[type="radio"]');
+        let isAnswered = false;
+        currentAnswers.forEach(answer => {
+            if (answer.checked) isAnswered = true;
+        });
+        
+        if (!isAnswered) {
+            alert('Пожалуйста, выберите ответ');
+            return;
+        }
+        
+        if (currentQuestion < totalQuestions) {
+            goToQuestion(currentQuestion + 1);
+        }
+    });
+    
+    updateProgress();
+    updateButtons();
+});
+</script>
+{% endblock %}

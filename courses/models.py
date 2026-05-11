@@ -1,13 +1,14 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.db.models import Q  
 
 
 class Language(models.Model):
     """Модель языка"""
     name = models.CharField(max_length=100)
     description = models.TextField()
-    icon = models.CharField(max_length=50, default='fas fa-language', blank=True)  # Добавьте если нет
+    icon = models.CharField(max_length=50, default='fas fa-language')
     
     def __str__(self):
         return self.name
@@ -23,7 +24,6 @@ class Language(models.Model):
             for lesson in course.lessons.all():
                 total += lesson.words.count()
         return total
-
 
 
 class Course(models.Model):
@@ -46,7 +46,7 @@ class Course(models.Model):
     description = models.TextField()
     level = models.CharField(max_length=50, choices=LEVEL_CHOICES)
     order = models.PositiveIntegerField(default=1)
-    color = models.CharField(max_length=7, default='#4361ee')  # Цвет для карточки
+    color = models.CharField(max_length=7, default='#4361ee')
     is_active = models.BooleanField(default=True)
     
     class Meta:
@@ -160,10 +160,17 @@ class Progress(models.Model):
 
 class UserProfile(models.Model):
     """Профиль пользователя"""
+    USER_ROLES = [
+        ('student', 'Студент'),
+        ('moderator', 'Модератор'),
+        ('admin', 'Администратор'),
+    ]
+    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=20, choices=USER_ROLES, default='student')
     bio = models.TextField(blank=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
-    avatar_url = models.URLField(blank=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='Аватар')
+    avatar_url = models.URLField(blank=True, verbose_name='Ссылка на аватар')
     current_language = models.ForeignKey(
         Language,
         on_delete=models.SET_NULL,
@@ -174,47 +181,69 @@ class UserProfile(models.Model):
     streak_days = models.PositiveIntegerField(default=0)
     total_study_time_minutes = models.PositiveIntegerField(default=0)
     xp = models.PositiveIntegerField(default=0)
-    # Убираем поле level или делаем его вычисляемым
-    level = models.PositiveIntegerField(default=1, editable=False)  # Только для чтения
+    level = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
-        return f"Профиль {self.user.username}"
-    
-    def save(self, *args, **kwargs):
-        # Автоматически пересчитываем уровень при сохранении
-        self.level = self.xp // 100 + 1
-        super().save(*args, **kwargs)
+        return f"Профиль {self.user.username} ({self.get_role_display()})"
     
     @property
-    def current_level(self):
-        """Текущий уровень на основе XP"""
-        return self.xp // 100 + 1
+    def is_moderator(self):
+        return self.role == 'moderator'
     
     @property
-    def xp_in_current_level(self):
-        """XP в текущем уровне"""
-        return self.xp % 100
+    def is_admin(self):
+        return self.role == 'admin' or self.user.is_superuser
     
     @property
-    def xp_for_next_level(self):
-        """Сколько XP нужно для следующего уровня"""
-        return (self.current_level + 1) * 100 - self.xp
-    
-    @property
-    def level_progress_percentage(self):
-        """Процент прогресса до следующего уровня"""
-        return (self.xp_in_current_level / 100) * 100 if self.xp_in_current_level > 0 else 0
-    
-    @property
-    def avatar_display(self):
-        """Возвращает URL аватарки или дефолтную"""
-        if self.avatar and hasattr(self.avatar, 'url'):
+    def get_avatar_url(self):
+        """Получить URL аватара"""
+        if self.avatar:
             return self.avatar.url
         elif self.avatar_url:
             return self.avatar_url
-        return None
+        else:
+            # Генерируем аватар на основе инициалов
+            return f'https://ui-avatars.com/api/?background=4361ee&color=fff&name={self.user.username}'
+    
+    @property
+    def can_access_admin_panel(self):
+        """Только настоящие администраторы имеют доступ к админ-панели"""
+        return self.is_admin or self.user.is_superuser
+
+
+class ModeratorStudent(models.Model):
+    """Связь модератора с учениками"""
+    moderator = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='my_students'
+    )
+    student = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='my_moderators'
+    )
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, help_text="Заметки модератора об ученике")
+    
+    class Meta:
+        unique_together = ['moderator', 'student']
+    
+    def __str__(self):
+        return f"{self.moderator.username} -> {self.student.username}"
+
+
+class ModeratorNote(models.Model):
+    """Заметки модератора о прогрессе ученика"""
+    moderator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderator_notes')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student_notes')
+    note = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Заметка от {self.moderator.username} для {self.student.username}"
 
 
 class Test(models.Model):
@@ -261,23 +290,181 @@ class TestResult(models.Model):
     """Результат теста"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     test = models.ForeignKey(Test, on_delete=models.CASCADE)
-    score = models.IntegerField()  # Количество правильных ответов
-    total = models.IntegerField()  # Всего вопросов
-    percentage = models.FloatField(default=0)  # Процент правильных ответов
+    score = models.IntegerField()
+    total = models.IntegerField()
+    percentage = models.FloatField(default=0)
     passed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Автоматически вычисляем процент при сохранении
-        if self.total > 0:
-            self.percentage = (self.score / self.total) * 100
-        else:
-            self.percentage = 0
-        
-        # Определяем, пройден ли тест (обычно 70%+)
-        self.passed = self.percentage >= 70
-        
+        # Рассчитываем процент при сохранении
+        self.percentage = (self.score / self.total * 100) if self.total > 0 else 0
         super().save(*args, **kwargs)
 
+class LevelTest(models.Model):
+    """Вступительный тест для определения уровня"""
+    language = models.ForeignKey(Language, on_delete=models.CASCADE, related_name='level_tests')
+    title = models.CharField(max_length=200, default="Определение уровня")
+    description = models.TextField(blank=True)
+    passing_score = models.IntegerField(default=70)
+    
     def __str__(self):
-        return f"{self.user.username} - {self.test.title}: {self.percentage:.1f}%"
+        return f"Тест уровня: {self.language.name}"
+    
+    def get_questions_count(self):
+        return self.questions.count()
+
+
+class LevelTestQuestion(models.Model):
+    """Вопросы для вступительного теста"""
+    test = models.ForeignKey(LevelTest, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField()
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"Q{self.order}: {self.text[:50]}"
+
+
+class LevelTestAnswer(models.Model):
+    """Ответы на вопросы вступительного теста"""
+    question = models.ForeignKey(LevelTestQuestion, on_delete=models.CASCADE, related_name='answers')
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+    difficulty_level = models.CharField(max_length=2, blank=True, null=True)
+    
+    def __str__(self):
+        return self.text
+
+
+class UserLevelTestResult(models.Model):
+    """Результаты вступительного теста пользователя"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    language = models.ForeignKey(Language, on_delete=models.CASCADE)
+    test = models.ForeignKey(LevelTest, on_delete=models.SET_NULL, null=True, blank=True)
+    score = models.IntegerField(default=0)
+    total = models.IntegerField(default=0)
+    percentage = models.FloatField(default=0)
+    recommended_level = models.CharField(max_length=2, default='A1')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.language.name}: {self.recommended_level} ({self.percentage:.0f}%)"
+
+class ChatRoom(models.Model):
+    """Модель чат-комнаты"""
+    ROOM_TYPES = [
+        ('moderator_student', 'Модератор-Студент'),
+        ('admin_moderator', 'Админ-Модератор'),
+        ('admin_student', 'Админ-Студент'),
+    ]
+    
+    room_type = models.CharField(max_length=20, choices=ROOM_TYPES, default='moderator_student')
+    moderator = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='moderator_chats',
+        null=True,
+        blank=True
+    )
+    student = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='student_chats',
+        null=True,
+        blank=True
+    )
+    admin = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='admin_chats',
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['moderator', 'student']
+    
+    def __str__(self):
+        if self.room_type == 'moderator_student':
+            return f"Чат: {self.moderator.username} ↔ {self.student.username}"
+        elif self.room_type == 'admin_moderator':
+            return f"Чат: {self.admin.username} ↔ {self.moderator.username}"
+        else:
+            return f"Чат: {self.admin.username} ↔ {self.student.username}"
+    
+    def get_other_user(self, current_user):
+        """Получить собеседника"""
+        if self.room_type == 'moderator_student':
+            return self.student if current_user == self.moderator else self.moderator
+        elif self.room_type == 'admin_moderator':
+            return self.moderator if current_user == self.admin else self.admin
+        else:
+            return self.student if current_user == self.admin else self.admin
+    
+    def get_unread_count(self, user):
+        """Получить количество непрочитанных сообщений"""
+        other_user = self.get_other_user(user)
+        return ChatMessage.objects.filter(
+            room=self,
+            receiver=user,
+            sender=other_user,
+            is_read=False
+        ).count()
+    
+    def get_last_message(self):
+        """Получить последнее сообщение в чате"""
+        return ChatMessage.objects.filter(room=self).order_by('-created_at').first()
+    
+    def get_participants_info(self, current_user):
+        """Получить информацию об участниках чата"""
+        other_user = self.get_other_user(current_user)
+        
+        # Определяем роль собеседника
+        try:
+            other_profile = other_user.userprofile
+            if other_profile.is_admin:
+                role = "Админ"
+                role_icon = ""
+            elif other_profile.is_moderator:
+                role = "Модератор"
+                role_icon = ""
+            else:
+                role = "Ученик"
+                role_icon = ""
+        except:
+            role = "Пользователь"
+            role_icon = "👤"
+        
+        return {
+            'user': other_user,
+            'username': other_user.username,
+            'role': role,
+            'role_icon': role_icon,
+            'avatar': other_user.username|first|upper
+        }
+
+
+class ChatMessage(models.Model):
+    """Модель сообщения в чате"""
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"{self.sender.username} -> {self.receiver.username}: {self.message[:50]}"
+    
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.save()
