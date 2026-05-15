@@ -8,5 +8,27 @@ venv/
 .DS_Store
 *.log
 *.pot
-*.pyc
 local_settings.py
+
+# Резервные копии
+backups/
+*.zip
+*.json
+*.sql
+*.dump
+
+# Статика в разработке (в продакшене собирается отдельно)
+staticfiles/
+media/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__/

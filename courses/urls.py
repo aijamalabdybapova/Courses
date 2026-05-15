@@ -17,6 +17,7 @@ from .views import (
 from django.contrib.auth import views as auth_views
 from .views import CustomLoginView
 from .forms import CustomPasswordResetForm  
+from .admin_backup_views import admin_backup
 
 # Импортируем админские view
 from .admin_views import (
@@ -188,5 +189,8 @@ urlpatterns = [
     path('level-test/<int:language_id>/question/', level_test_question, name='level_test_question'),
     path('level-test/<int:language_id>/result/<int:result_id>/', level_test_result, name='level_test_result'),
     path('chat/user-list/', chat_user_list, name='chat_user_list'),
+
+    # Резервное копирование
+    path('cms/backup/', admin_backup, name='admin_backup'),
 ]
 
