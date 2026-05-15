@@ -12,12 +12,10 @@ local_settings.py
 
 # Резервные копии
 backups/
-*.zip
-*.json
 *.sql
 *.dump
 
-# Статика
+# Статика и медиа
 staticfiles/
 media/
 
