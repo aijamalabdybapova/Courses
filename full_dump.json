@@ -1,4 +1,4 @@
-﻿[
+[
 {
   "model": "auth.user",
   "pk": 2,
@@ -22,7 +22,7 @@
   "pk": 3,
   "fields": {
     "password": "pbkdf2_sha256$1200000$GHC6a1GZevnNwtPq9G8mTU$pFb3RHFeE0Q/MoWe7Y3KyMc88Vvo1RLQYoy1jm+6mhI=",
-    "last_login": "2026-05-15T03:47:32.100Z",
+    "last_login": "2026-05-15T06:20:05.877Z",
     "is_superuser": false,
     "username": "aija",
     "first_name": "",
