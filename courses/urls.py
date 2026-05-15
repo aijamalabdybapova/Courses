@@ -10,7 +10,7 @@ from .views import (
     # Модераторские views
     moderator_dashboard, moderator_student_detail, moderator_add_note,
     moderator_delete_note, moderator_assign_student, moderator_remove_student, 
-    chat_list, chat_detail, chat_create, chat_send_ajax, chat_get_messages_ajax, chat_unread_count_ajax,
+    chat_list, chat_detail, chat_create, chat_send_ajax, chat_get_messages_ajax, chat_unread_count_ajax,chat_user_list,
      # Тест уровня
     level_test_start, level_test_submit, level_test_skip, level_test_question, level_test_result  
 )
@@ -187,9 +187,6 @@ urlpatterns = [
     path('level-test/<int:language_id>/skip/', level_test_skip, name='level_test_skip'),
     path('level-test/<int:language_id>/question/', level_test_question, name='level_test_question'),
     path('level-test/<int:language_id>/result/<int:result_id>/', level_test_result, name='level_test_result'),
+    path('chat/user-list/', chat_user_list, name='chat_user_list'),
 ]
 
-# ==================== ОБРАБОТЧИКИ ОШИБОК ====================
-# Раскомментируйте для production
-# handler404 = 'courses.views.custom_404'
-# handler500 = 'courses.views.custom_500'

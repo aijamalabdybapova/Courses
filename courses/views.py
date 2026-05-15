@@ -1752,3 +1752,74 @@ def level_test_result(request, language_id, result_id):
         'percentage': result.percentage,
         'recommended_level': result.recommended_level,
     })
+
+@login_required
+def chat_user_list(request):
+    """API для получения списка пользователей для нового чата"""
+    user = request.user
+    profile = user.userprofile
+    
+    users_list = []
+    
+    if profile.is_admin:
+        # Админ может писать всем модераторам и студентам
+        # Модераторы
+        moderators = User.objects.filter(userprofile__role='moderator').exclude(id=user.id)
+        for m in moderators:
+            users_list.append({
+                'id': m.id,
+                'username': m.username,
+                'role': 'Модератор',
+                'role_icon': 'fa-user-tie'
+            })
+        # Студенты
+        students = User.objects.filter(userprofile__role='student').exclude(id=user.id)
+        for s in students:
+            users_list.append({
+                'id': s.id,
+                'username': s.username,
+                'role': 'Студент',
+                'role_icon': 'fa-user-graduate'
+            })
+            
+    elif profile.is_moderator:
+        # Модератор может писать своим ученикам и админу
+        # Свои ученики
+        students = ModeratorStudent.objects.filter(moderator=user).select_related('student')
+        for s in students:
+            users_list.append({
+                'id': s.student.id,
+                'username': s.student.username,
+                'role': 'Мой ученик',
+                'role_icon': 'fa-user-graduate'
+            })
+        # Админ
+        admin = User.objects.filter(is_superuser=True).first()
+        if admin and admin.id != user.id:
+            users_list.append({
+                'id': admin.id,
+                'username': admin.username,
+                'role': 'Администратор',
+                'role_icon': 'fa-crown'
+            })
+            
+    else:
+        # Студент может писать только своему модератору
+        moderator_rel = ModeratorStudent.objects.filter(student=user).first()
+        if moderator_rel:
+            users_list.append({
+                'id': moderator_rel.moderator.id,
+                'username': moderator_rel.moderator.username,
+                'role': 'Мой модератор',
+                'role_icon': 'fa-user-tie'
+            })
+    
+    # Поиск
+    search = request.GET.get('search', '')
+    if search:
+        users_list = [u for u in users_list if search.lower() in u['username'].lower()]
+    
+    return JsonResponse({
+        'success': True,
+        'users': users_list
+    })

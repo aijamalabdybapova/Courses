@@ -277,5 +277,46 @@
     </script>
     
     {% block extra_js %}{% endblock %}
+
+    <script>
+    function updateUnreadBadge() {
+        {% if user.is_authenticated %}
+        fetch('{% url "chat_unread_count_ajax" %}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Обновляем в навигации
+                    const navBadge = document.getElementById('nav-unread-badge');
+                    if (navBadge) {
+                        if (data.unread_count > 0) {
+                            navBadge.textContent = data.unread_count;
+                            navBadge.style.display = 'inline-block';
+                        } else {
+                            navBadge.style.display = 'none';
+                        }
+                    }
+                    
+                    // Обновляем в дашборде
+                    const unreadBadge = document.getElementById('unread-badge');
+                    if (unreadBadge) {
+                        if (data.unread_count > 0) {
+                            unreadBadge.textContent = data.unread_count;
+                            unreadBadge.style.display = 'inline-block';
+                        } else {
+                            unreadBadge.style.display = 'none';
+                        }
+                    }
+                }
+            })
+            .catch(error => console.log('Error:', error));
+        {% endif %}
+    }
+
+    // Обновляем при загрузке и каждые 30 секунд
+    document.addEventListener('DOMContentLoaded', function() {
+        updateUnreadBadge();
+        setInterval(updateUnreadBadge, 30000);
+    });
+    </script>
 </body>
 </html>
