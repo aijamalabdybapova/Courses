@@ -17,7 +17,7 @@ backups/
 *.sql
 *.dump
 
-# Статика в разработке (в продакшене собирается отдельно)
+# Статика
 staticfiles/
 media/
 
@@ -27,8 +27,5 @@ media/
 *.swp
 *.swo
 
-# Django
-*.log
-*.pot
-*.pyc
-__pycache__/
+# Render
+*.db
