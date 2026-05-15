@@ -25,6 +25,7 @@ ALLOWED_HOSTS = [
     '.onrender.com',  # Разрешает все поддомены onrender.com
 ]
 
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com', 'http://localhost:8000']
 
 # ========== ПРИЛОЖЕНИЯ ==========
 INSTALLED_APPS = [
